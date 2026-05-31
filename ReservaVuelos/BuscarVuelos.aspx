@@ -22,7 +22,7 @@
             <asp:TextBox ID="txtFechaVuelta" runat="server" TextMode="Date"></asp:TextBox>
         </span>
 
-        <asp:Button ID="btnBuscar" runat="server" Text="Buscar" OnClick="btnBuscar_Click" />
+        <asp:Button ID="btnBuscar" runat="server" Text="Buscar" OnClick="btnBuscar_Click" OnClientClick="return validateDates();" />
     </div>
 
     <script type="text/javascript">
@@ -32,6 +32,33 @@
             if (!ddl || !span) return;
             if (ddl.value === 'IdaVuelta') span.style.display = 'inline-block'; else span.style.display = 'none';
         }
+
+        function validateDates() {
+            var ddl = document.getElementById('<%= ddlTipoViaje.ClientID %>');
+            var fechaIda = document.getElementById('<%= txtFecha.ClientID %>');
+            var fechaVuelta = document.getElementById('<%= txtFechaVuelta.ClientID %>');
+            var lbl = document.getElementById('<%= lblMsg.ClientID %>');
+            if (!ddl || !fechaIda || !lbl) return true;
+            lbl.innerText = '';
+            if (ddl.value === 'IdaVuelta') {
+                if (!fechaIda.value || !fechaVuelta.value) {
+                    lbl.style.color = 'red';
+                    lbl.innerText = 'Ingrese fechas de ida y vuelta.';
+                    return false;
+                }
+                var d1 = new Date(fechaIda.value);
+                var d2 = new Date(fechaVuelta.value);
+                if (d2 < d1) {
+                    lbl.style.color = 'red';
+                    lbl.innerText = 'La fecha de vuelta no puede ser anterior a la fecha de ida.';
+                    return false;
+                }
+            }
+            // clear message and allow postback
+            lbl.innerText = '';
+            return true;
+        }
+
         // asegurar estado inicial
         window.addEventListener ? window.addEventListener('load', toggleReturn) : window.onload = toggleReturn;
     </script>
@@ -64,6 +91,7 @@
         <option value="Miami"></option>
     </datalist>
     <br />
+    <asp:Label runat="server" Text="Vuelos - Ida" Font-Bold="True" />
     <asp:GridView ID="gvVuelos" runat="server" CssClass="grid" AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo">
         <Columns>
             <asp:BoundField DataField="IdVuelo" HeaderText="Id" />
@@ -75,7 +103,25 @@
             <asp:BoundField DataField="CuposDisponibles" HeaderText="Cupos" />
             <asp:TemplateField>
                 <ItemTemplate>
-                    <asp:Button runat="server" ID="btnReservar" CssClass="btn-grid" Text="Reservar" CommandName="Reservar" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return confirm('Confirma reservar este vuelo?');" />
+                    <asp:Button runat="server" ID="btnReservar" CssClass="btn-grid" Text="Reservar" CommandName="Reservar" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return showConfirm('Confirma reservar este vuelo?', this);" />
+                </ItemTemplate>
+            </asp:TemplateField>
+        </Columns>
+    </asp:GridView>
+
+    <asp:Label runat="server" ID="lblVueltaTitle" Text="Vuelos - Vuelta" Font-Bold="True" Visible="false" />
+    <asp:GridView ID="gvVuelosReturn" runat="server" CssClass="grid" AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo" Visible="false">
+        <Columns>
+            <asp:BoundField DataField="IdVuelo" HeaderText="Id" />
+            <asp:BoundField DataField="Origen" HeaderText="Origen" />
+            <asp:BoundField DataField="Destino" HeaderText="Destino" />
+            <asp:BoundField DataField="FechaSalida" HeaderText="Fecha" DataFormatString="{0:yyyy-MM-dd}" />
+            <asp:BoundField DataField="HoraSalida" HeaderText="Hora" />
+            <asp:BoundField DataField="Precio" HeaderText="Precio" DataFormatString="{0:C}" />
+            <asp:BoundField DataField="CuposDisponibles" HeaderText="Cupos" />
+            <asp:TemplateField>
+                <ItemTemplate>
+                    <asp:Button runat="server" ID="btnReservarReturn" CssClass="btn-grid" Text="Reservar" CommandName="Reservar" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return showConfirm('Confirma reservar este vuelo?', this);" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

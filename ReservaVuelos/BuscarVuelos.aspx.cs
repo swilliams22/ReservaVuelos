@@ -23,14 +23,51 @@ namespace ReservaVuelos
         protected void btnBuscar_Click(object sender, EventArgs e)
         {
             DateTime? fecha = null;
+            DateTime? fechaVuelta = null;
             if (!string.IsNullOrWhiteSpace(txtFecha.Text))
             {
                 DateTime f;
                 if (DateTime.TryParse(txtFecha.Text, out f)) fecha = f;
             }
+            if (!string.IsNullOrWhiteSpace(txtFechaVuelta.Text))
+            {
+                DateTime fv;
+                if (DateTime.TryParse(txtFechaVuelta.Text, out fv)) fechaVuelta = fv;
+            }
+
+            // Si es ida y vuelta validar fechas
+            if (ddlTipoViaje != null && ddlTipoViaje.SelectedValue == "IdaVuelta")
+            {
+                if (!fecha.HasValue || !fechaVuelta.HasValue)
+                {
+                    lblMsg.Text = "Ingrese fechas de ida y vuelta.";
+                    return;
+                }
+                if (fechaVuelta.Value.Date < fecha.Value.Date)
+                {
+                    lblMsg.Text = "La fecha de vuelta no puede ser anterior a la fecha de ida.";
+                    return;
+                }
+            }
+
             var lista = _vBLL.Search(txtOrigen.Text.Trim(), txtDestino.Text.Trim(), fecha);
             gvVuelos.DataSource = lista;
             gvVuelos.DataBind();
+
+            // Si es ida y vuelta y hay fecha vuelta, mostrar sugerencias para la vuelta (origen/destino invertidos)
+            if (ddlTipoViaje != null && ddlTipoViaje.SelectedValue == "IdaVuelta" && fechaVuelta.HasValue)
+            {
+                var listaReturn = _vBLL.Search(txtDestino.Text.Trim(), txtOrigen.Text.Trim(), fechaVuelta);
+                gvVuelosReturn.Visible = true;
+                lblVueltaTitle.Visible = true;
+                gvVuelosReturn.DataSource = listaReturn;
+                gvVuelosReturn.DataBind();
+            }
+            else
+            {
+                gvVuelosReturn.Visible = false;
+                lblVueltaTitle.Visible = false;
+            }
         }
 
         protected void gvVuelos_RowCommand(object sender, GridViewCommandEventArgs e)

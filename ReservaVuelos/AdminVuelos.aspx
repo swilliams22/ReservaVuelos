@@ -10,7 +10,7 @@
         <asp:TextBox ID="txtHora" runat="server" Placeholder="HH:mm"></asp:TextBox>
         <asp:TextBox ID="txtPrecio" runat="server" Placeholder="Precio"></asp:TextBox>
         <asp:TextBox ID="txtCupos" runat="server" Placeholder="Cupos"></asp:TextBox>
-        <asp:Button ID="btnCrear" runat="server" Text="Crear" OnClick="btnCrear_Click" OnClientClick="return confirm('Confirma crear este vuelo?');" />
+        <asp:Button ID="btnCrear" runat="server" Text="Crear" OnClick="btnCrear_Click" OnClientClick="return showConfirm('Confirma crear este vuelo?', this);" />
     </div>
 
     <h3>Filtro</h3>
@@ -62,7 +62,7 @@
             </asp:TemplateField>
             <asp:TemplateField>
                 <ItemTemplate>
-                    <asp:Button runat="server" ID="btnBaja" CssClass="btn-grid" Text="Baja" CommandName="Baja" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return confirm('Confirma dar de baja este vuelo?');" />
+                    <asp:Button runat="server" ID="btnBaja" CssClass="btn-grid" Text="Baja" CommandName="Baja" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return showConfirm('Confirma dar de baja este vuelo?', this);" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

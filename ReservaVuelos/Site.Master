@@ -73,5 +73,47 @@
     <asp:PlaceHolder runat="server">
         <%: Scripts.Render("~/Scripts/bootstrap.js") %>
     </asp:PlaceHolder>
+    <!-- Confirm modal -->
+    <div id="confirmModal" style="display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000;">
+        <div style="background:#fff; max-width:480px; margin:80px auto; padding:16px; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,0.3);">
+            <h3 id="confirmModalTitle">Vuelos-UAI</h3>
+            <p id="confirmModalMessage"></p>
+            <div style="text-align:right;">
+                <button type="button" id="confirmModalCancel" onclick="hideConfirm();" style="margin-right:8px;">Cancelar</button>
+                <button type="button" id="confirmModalOk" onclick="confirmOk();">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        function showConfirm(message, sourceElem) {
+            try {
+                var modal = document.getElementById('confirmModal');
+                document.getElementById('confirmModalTitle').innerText = 'Vuelos-UAI';
+                document.getElementById('confirmModalMessage').innerText = message || '';
+                modal._source = sourceElem || null;
+                modal.style.display = 'block';
+            } catch (e) { console && console.log(e); }
+            return false; // prevent immediate postback
+        }
+        function hideConfirm() {
+            var modal = document.getElementById('confirmModal');
+            if (modal) modal.style.display = 'none';
+        }
+        function confirmOk() {
+            var modal = document.getElementById('confirmModal');
+            if (!modal) return true;
+            var src = modal._source;
+            hideConfirm();
+            try {
+                if (src && src.name && typeof __doPostBack === 'function') {
+                    __doPostBack(src.name, '');
+                } else if (src && typeof src.click === 'function') {
+                    src.click();
+                }
+            } catch (e) { console && console.log(e); }
+            return false;
+        }
+    </script>
 </body>
 </html>

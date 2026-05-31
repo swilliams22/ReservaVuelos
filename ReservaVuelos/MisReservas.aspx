@@ -14,7 +14,7 @@
             <asp:BoundField DataField="FechaReserva" HeaderText="FechaReserva" DataFormatString="{0:yyyy-MM-dd HH:mm}" />
             <asp:TemplateField>
                 <ItemTemplate>
-                    <asp:Button runat="server" ID="btnCancelar" CssClass="btn-grid" Text="Cancelar" CommandName="Cancelar" CommandArgument='<%# Eval("IdReserva") %>' OnClientClick="return confirm('Confirma cancelar esta reserva?');" />
+                    <asp:Button runat="server" ID="btnCancelar" CssClass="btn-grid" Text="Cancelar" CommandName="Cancelar" CommandArgument='<%# Eval("IdReserva") %>' OnClientClick="return showConfirm('Confirma cancelar esta reserva?', this);" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

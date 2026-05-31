@@ -14,5 +14,7 @@ namespace ReservaVuelos
         protected global::System.Web.UI.WebControls.TextBox txtFechaVuelta;
         protected global::System.Web.UI.WebControls.Button btnBuscar;
         protected global::System.Web.UI.WebControls.GridView gvVuelos;
+        protected global::System.Web.UI.WebControls.Label lblVueltaTitle;
+        protected global::System.Web.UI.WebControls.GridView gvVuelosReturn;
     }
 }
