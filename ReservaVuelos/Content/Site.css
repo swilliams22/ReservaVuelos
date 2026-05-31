@@ -19,3 +19,28 @@ textarea {
         padding: 0;
     }
 }
+
+/* Grid styles added for project */
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ddd;
+  margin-bottom: 12px;
+}
+.grid th, .grid td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+}
+.grid th {
+  background: #f2f2f2;
+  font-weight: bold;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+}
+.grid tr:nth-child(even) td { background: #fbfbfb; }
+.grid tr:hover td { background: #f7f7f7; }
+.btn-grid { margin: 4px; }
+
+.filter-row { margin-bottom: 12px; }
+.filter-row input, .filter-row select { margin-right: 8px; padding: 6px; }
+

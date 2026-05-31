@@ -59,7 +59,8 @@ namespace ReservaVuelos
                 try
                 {
                     var idReserva = _rBLL.Create(r);
-                    _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = $"Reserva creada. IdReserva: {idReserva} - IdVuelo: {id}", Criticidad = "Baja", Pantalla = "BuscarVuelos" });
+                    // Reserva creada -> Info
+                    _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = $"Reserva creada. IdReserva: {idReserva} - IdVuelo: {id}", Criticidad = "Info", Pantalla = "BuscarVuelos" });
                     lblMsg.ForeColor = System.Drawing.Color.Green;
                     lblMsg.Text = "Reserva creada correctamente.";
                     // actualizar resultados de búsqueda para reflejar cupos

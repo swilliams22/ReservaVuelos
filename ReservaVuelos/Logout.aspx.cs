@@ -12,7 +12,8 @@ namespace ReservaVuelos
             var user = SesionService.GetUser();
             if (user != null)
             {
-                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Logout", Criticidad = "Baja", Pantalla = "Logout" });
+                // Logout -> Info
+                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Logout", Criticidad = "Info", Pantalla = "Logout" });
             }
             SesionService.Clear();
             Response.Redirect("Default.aspx");

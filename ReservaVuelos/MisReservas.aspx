@@ -2,7 +2,7 @@
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <h2>Mis reservas</h2>
     <asp:Label ID="lblMsg" runat="server" ForeColor="Red"></asp:Label>
-    <asp:GridView ID="gvReservas" runat="server" AutoGenerateColumns="false" OnRowCommand="gvReservas_RowCommand" OnRowDataBound="gvReservas_RowDataBound" DataKeyNames="IdReserva">
+    <asp:GridView ID="gvReservas" runat="server" CssClass="grid" AutoGenerateColumns="false" OnRowCommand="gvReservas_RowCommand" OnRowDataBound="gvReservas_RowDataBound" DataKeyNames="IdReserva">
         <Columns>
             <asp:BoundField DataField="IdReserva" HeaderText="IdReserva" />
             <asp:BoundField DataField="Origen" HeaderText="Origen" />
@@ -14,7 +14,7 @@
             <asp:BoundField DataField="FechaReserva" HeaderText="FechaReserva" DataFormatString="{0:yyyy-MM-dd HH:mm}" />
             <asp:TemplateField>
                 <ItemTemplate>
-                    <asp:Button runat="server" ID="btnCancelar" Text="Cancelar" CommandName="Cancelar" CommandArgument='<%# Eval("IdReserva") %>' OnClientClick="return confirm('Confirma cancelar esta reserva?');" />
+                    <asp:Button runat="server" ID="btnCancelar" CssClass="btn-grid" Text="Cancelar" CommandName="Cancelar" CommandArgument='<%# Eval("IdReserva") %>' OnClientClick="return confirm('Confirma cancelar esta reserva?');" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

@@ -46,7 +46,7 @@
         <option value="Miami"></option>
     </datalist>
     <h3>Vuelos</h3>
-    <asp:GridView ID="gvVuelosAdmin" runat="server" AutoGenerateColumns="false" DataKeyNames="IdVuelo" OnRowCommand="gvVuelosAdmin_RowCommand">
+    <asp:GridView ID="gvVuelosAdmin" runat="server" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdVuelo" OnRowCommand="gvVuelosAdmin_RowCommand">
         <Columns>
             <asp:BoundField DataField="IdVuelo" HeaderText="Id" />
             <asp:BoundField DataField="Origen" HeaderText="Origen" />
@@ -62,7 +62,7 @@
             </asp:TemplateField>
             <asp:TemplateField>
                 <ItemTemplate>
-                    <asp:Button runat="server" ID="btnBaja" Text="Baja" CommandName="Baja" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return confirm('Confirma dar de baja este vuelo?');" />
+                    <asp:Button runat="server" ID="btnBaja" CssClass="btn-grid" Text="Baja" CommandName="Baja" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return confirm('Confirma dar de baja este vuelo?');" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

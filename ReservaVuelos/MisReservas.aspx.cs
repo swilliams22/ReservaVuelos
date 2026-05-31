@@ -42,7 +42,8 @@ namespace ReservaVuelos
                 var ok = _rBLL.Cancel(id);
                 if (ok)
                 {
-                    _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = $"Reserva cancelada. IdReserva: {id}", Criticidad = "Baja", Pantalla = "MisReservas" });
+                    // Reserva cancelada -> Info
+                    _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = $"Reserva cancelada. IdReserva: {id}", Criticidad = "Info", Pantalla = "MisReservas" });
                     BindGrid(user.IdUsuario);
                     lblMsg.ForeColor = System.Drawing.Color.Green;
                     lblMsg.Text = "Reserva cancelada correctamente.";

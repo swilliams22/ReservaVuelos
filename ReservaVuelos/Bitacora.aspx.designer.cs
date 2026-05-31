@@ -8,5 +8,12 @@ namespace ReservaVuelos
     {
         protected global::System.Web.UI.WebControls.Label lblMsg;
         protected global::System.Web.UI.WebControls.GridView gvBitacora;
+        protected global::System.Web.UI.WebControls.TextBox txtDesde;
+        protected global::System.Web.UI.WebControls.TextBox txtHasta;
+        protected global::System.Web.UI.WebControls.TextBox txtUsuarioFiltro;
+        protected global::System.Web.UI.WebControls.DropDownList ddlCriticidad;
+        protected global::System.Web.UI.WebControls.TextBox txtPantallaFiltro;
+        protected global::System.Web.UI.WebControls.Button btnFiltrar;
+        protected global::System.Web.UI.WebControls.Button btnLimpiar;
     }
 }

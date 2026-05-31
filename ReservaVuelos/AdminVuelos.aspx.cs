@@ -42,10 +42,12 @@ namespace ReservaVuelos
                     var canceledCount = _vBLL.SoftDelete(id);
                     if (canceledCount >= 0)
                     {
-                        _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo dado de baja. IdVuelo: {id}", Criticidad = "Media", Pantalla = "AdminVuelos" });
+                    // Baja de vuelo -> Info
+                    _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo dado de baja. IdVuelo: {id}", Criticidad = "Info", Pantalla = "AdminVuelos" });
                         if (canceledCount > 0)
                         {
-                            _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Reservas canceladas por baja de vuelo. IdVuelo: {id} - Cantidad: {canceledCount}", Criticidad = "Media", Pantalla = "AdminVuelos" });
+                            // Cancelaciones por baja de vuelo -> Info
+                            _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Reservas canceladas por baja de vuelo. IdVuelo: {id} - Cantidad: {canceledCount}", Criticidad = "Info", Pantalla = "AdminVuelos" });
                         }
                         BindGrid();
                         lblMsg.ForeColor = System.Drawing.Color.Green;
@@ -92,7 +94,8 @@ namespace ReservaVuelos
                     Activo = true
                 };
                 var idVuelo = _vBLL.Create(v);
-                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo creado. IdVuelo: {idVuelo}", Criticidad = "Media", Pantalla = "AdminVuelos" });
+                // Creación de vuelo -> Info
+                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo creado. IdVuelo: {idVuelo}", Criticidad = "Info", Pantalla = "AdminVuelos" });
                 BindGrid();
                 lblMsg.ForeColor = System.Drawing.Color.Green;
                 lblMsg.Text = "Vuelo creado.";

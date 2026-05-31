@@ -7,10 +7,36 @@
         <asp:TextBox ID="txtOrigen" runat="server"></asp:TextBox>
         <asp:Label runat="server" Text="Destino"></asp:Label>
         <asp:TextBox ID="txtDestino" runat="server"></asp:TextBox>
-        <asp:Label runat="server" Text="Fecha (yyyy-mm-dd)"></asp:Label>
-        <asp:TextBox ID="txtFecha" runat="server"></asp:TextBox>
+
+        <asp:Label runat="server" Text="Tipo de viaje"></asp:Label>
+        <asp:DropDownList ID="ddlTipoViaje" runat="server" onchange="toggleReturn();">
+            <asp:ListItem Value="SoloIda" Selected="True">Solo ida</asp:ListItem>
+            <asp:ListItem Value="IdaVuelta">Ida y vuelta</asp:ListItem>
+        </asp:DropDownList>
+
+        <asp:Label runat="server" Text="Fecha ida"></asp:Label>
+        <asp:TextBox ID="txtFecha" runat="server" TextMode="Date"></asp:TextBox>
+
+        <span id="spanVuelta" style="display:none;">
+            <asp:Label runat="server" Text="Fecha vuelta"></asp:Label>
+            <asp:TextBox ID="txtFechaVuelta" runat="server" TextMode="Date"></asp:TextBox>
+        </span>
+
         <asp:Button ID="btnBuscar" runat="server" Text="Buscar" OnClick="btnBuscar_Click" />
     </div>
+
+    <script type="text/javascript">
+        function toggleReturn() {
+            var ddl = document.getElementById('<%= ddlTipoViaje.ClientID %>');
+            var span = document.getElementById('spanVuelta');
+            if (!ddl || !span) return;
+            if (ddl.value === 'IdaVuelta') span.style.display = 'inline-block'; else span.style.display = 'none';
+        }
+        // asegurar estado inicial
+        window.addEventListener ? window.addEventListener('load', toggleReturn) : window.onload = toggleReturn;
+    </script>
+
+    <p><strong>Aclaración:</strong> Las reservas se realizan por tramo. Para un viaje de ida y vuelta, reserve primero el vuelo de ida y luego el vuelo de vuelta.</p>
 
     <!-- Datalist para sugerencias de ciudades -->
     <datalist id="listaCiudadesBusqueda">
@@ -38,7 +64,7 @@
         <option value="Miami"></option>
     </datalist>
     <br />
-    <asp:GridView ID="gvVuelos" runat="server" AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo">
+    <asp:GridView ID="gvVuelos" runat="server" CssClass="grid" AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo">
         <Columns>
             <asp:BoundField DataField="IdVuelo" HeaderText="Id" />
             <asp:BoundField DataField="Origen" HeaderText="Origen" />
@@ -49,7 +75,7 @@
             <asp:BoundField DataField="CuposDisponibles" HeaderText="Cupos" />
             <asp:TemplateField>
                 <ItemTemplate>
-                    <asp:Button runat="server" ID="btnReservar" Text="Reservar" CommandName="Reservar" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return confirm('Confirma reservar este vuelo?');" />
+                    <asp:Button runat="server" ID="btnReservar" CssClass="btn-grid" Text="Reservar" CommandName="Reservar" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return confirm('Confirma reservar este vuelo?');" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

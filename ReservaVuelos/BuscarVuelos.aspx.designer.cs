@@ -9,7 +9,9 @@ namespace ReservaVuelos
         protected global::System.Web.UI.WebControls.Label lblMsg;
         protected global::System.Web.UI.WebControls.TextBox txtOrigen;
         protected global::System.Web.UI.WebControls.TextBox txtDestino;
+        protected global::System.Web.UI.WebControls.DropDownList ddlTipoViaje;
         protected global::System.Web.UI.WebControls.TextBox txtFecha;
+        protected global::System.Web.UI.WebControls.TextBox txtFechaVuelta;
         protected global::System.Web.UI.WebControls.Button btnBuscar;
         protected global::System.Web.UI.WebControls.GridView gvVuelos;
     }

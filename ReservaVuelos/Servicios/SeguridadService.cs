@@ -15,22 +15,26 @@ namespace ReservaVuelos.Servicios
             var u = _ud.GetByEmail(email);
             if (u == null)
             {
-                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login fallido - usuario no encontrado", Criticidad = "Media", Pantalla = "Login" });
+                // Usuario no encontrado -> Advertencia
+                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login fallido - usuario no encontrado", Criticidad = "Advertencia", Pantalla = "Login" });
                 return null;
             }
             if (!u.Activo)
             {
-                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login fallido - usuario inactivo", Criticidad = "Media", Pantalla = "Login" });
+                // Usuario inactivo -> Advertencia
+                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login fallido - usuario inactivo", Criticidad = "Advertencia", Pantalla = "Login" });
                 return null;
             }
             if (HashService.VerifyPassword(password, u.PasswordHash, u.PasswordSalt))
             {
-                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login exitoso", Criticidad = "Baja", Pantalla = "Login" });
+                // Login exitoso -> Info
+                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login exitoso", Criticidad = "Info", Pantalla = "Login" });
                 return u;
             }
             else
             {
-                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login fallido - contraseña incorrecta", Criticidad = "Media", Pantalla = "Login" });
+                // Contraseña incorrecta -> Advertencia
+                _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = email, Accion = "Login fallido - contraseña incorrecta", Criticidad = "Advertencia", Pantalla = "Login" });
                 return null;
             }
         }
@@ -44,7 +48,8 @@ namespace ReservaVuelos.Servicios
             u.FechaAlta = DateTime.Now;
             u.Activo = true;
             var id = _ud.Create(u);
-            _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = u.Email, Accion = $"Registro de usuario. IdUsuario: {id}", Criticidad = "Baja", Pantalla = "Registro" });
+            // Registro exitoso -> Info
+            _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = u.Email, Accion = $"Registro de usuario. IdUsuario: {id}", Criticidad = "Info", Pantalla = "Registro" });
             return id;
         }
     }

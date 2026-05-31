@@ -63,12 +63,9 @@ CREATE TABLE Bitacora(
 );
 GO
 
--- Datos de prueba: crear un Administrador y un Usuario
--- Las contraseñas deben generarse con PBKDF2; a modo de ejemplo aquí se insertan valores que se deben reemplazar
--- Se recomienda crear usuarios mediante la app una vez desplegada; sin embargo se incluyen instrucciones para crear usuarios manualmente.
 
--- Ejemplo: crear usuario administrador (recomiendo registrar desde la app para generar hash/salt correctos)
--- INSERT INTO Usuarios (Nombre,Email,PasswordHash,PasswordSalt,Rol,Activo,FechaAlta) VALUES ('Admin','admin@local','<PasswordHash>','<PasswordSalt>','Administrador',1,GETDATE());
+-- Se recomienda crear usuarios mediante la app una vez desplegada. (recomiendo registrar desde la app para generar hash/salt correctos)
+-- Una vez creado usuario, desde SQL se puede actualizar el rol a 'Administrador' para ver sus funcionalidades
 
 -- Datos de vuelos de ejemplo
 INSERT INTO Vuelos (Origen,Destino,FechaSalida,HoraSalida,Precio,CuposDisponibles,Activo) VALUES

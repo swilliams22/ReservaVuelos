@@ -17,9 +17,38 @@ namespace ReservaVuelos
             }
             if (!IsPostBack)
             {
-                gvBitacora.DataSource = _bBLL.GetAll();
-                gvBitacora.DataBind();
+                LoadGrid();
             }
+        }
+
+        private void LoadGrid()
+        {
+            gvBitacora.DataSource = _bBLL.GetAll();
+            gvBitacora.DataBind();
+        }
+
+        protected void btnFiltrar_Click(object sender, EventArgs e)
+        {
+            DateTime? desde = null, hasta = null;
+            DateTime d;
+            if (DateTime.TryParse(txtDesde.Text, out d)) desde = d;
+            if (DateTime.TryParse(txtHasta.Text, out d)) hasta = d;
+            var usuario = txtUsuarioFiltro.Text.Trim();
+            var criticidad = ddlCriticidad.SelectedValue;
+            var pantalla = txtPantallaFiltro.Text.Trim();
+            var lista = _bBLL.GetByFilters(desde, hasta, usuario, criticidad, pantalla);
+            gvBitacora.DataSource = lista;
+            gvBitacora.DataBind();
+        }
+
+        protected void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            txtDesde.Text = string.Empty;
+            txtHasta.Text = string.Empty;
+            txtUsuarioFiltro.Text = string.Empty;
+            ddlCriticidad.SelectedIndex = 0;
+            txtPantallaFiltro.Text = string.Empty;
+            LoadGrid();
         }
     }
 }
