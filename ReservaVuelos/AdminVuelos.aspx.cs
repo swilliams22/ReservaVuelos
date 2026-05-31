@@ -21,8 +21,13 @@ namespace ReservaVuelos
                 return;
             }
 
+            // asociar datalist a textboxes para sugerencias
+            txtOrigen.Attributes["list"] = "listaCiudades";
+            txtDestino.Attributes["list"] = "listaCiudades";
+
             if (!IsPostBack)
             {
+                // cargar grilla según filtro (por defecto Activos)
                 BindGrid();
             }
         }
@@ -34,17 +39,21 @@ namespace ReservaVuelos
                 int id = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    var ok = _vBLL.SoftDelete(id);
-                    if (ok)
+                    var canceledCount = _vBLL.SoftDelete(id);
+                    if (canceledCount >= 0)
                     {
                         _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo dado de baja. IdVuelo: {id}", Criticidad = "Media", Pantalla = "AdminVuelos" });
+                        if (canceledCount > 0)
+                        {
+                            _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Reservas canceladas por baja de vuelo. IdVuelo: {id} - Cantidad: {canceledCount}", Criticidad = "Media", Pantalla = "AdminVuelos" });
+                        }
                         BindGrid();
                         lblMsg.ForeColor = System.Drawing.Color.Green;
-                        lblMsg.Text = "Vuelo dado de baja correctamente.";
+                        lblMsg.Text = "Vuelo dado de baja correctamente." + (canceledCount > 0 ? (" Reservas canceladas: " + canceledCount) : string.Empty);
                     }
                     else
                     {
-                        lblMsg.Text = "No se encontró el vuelo o ya estaba dado de baja.";
+                        lblMsg.Text = "No se encontró el vuelo.";
                     }
                 }
                 catch (Exception ex)
@@ -54,9 +63,16 @@ namespace ReservaVuelos
             }
         }
 
+        protected void ddlFiltro_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            BindGrid();
+        }
+
         private void BindGrid()
         {
-            var lista = _vBLL.Search(null, null, null);
+            var filtro = "Activos";
+            if (ddlFiltro != null) filtro = ddlFiltro.SelectedValue;
+            var lista = _vBLL.Search(null, null, null, filtro);
             gvVuelosAdmin.DataSource = lista;
             gvVuelosAdmin.DataBind();
         }

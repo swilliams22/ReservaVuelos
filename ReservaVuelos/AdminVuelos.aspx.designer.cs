@@ -14,6 +14,7 @@ namespace ReservaVuelos
         protected global::System.Web.UI.WebControls.TextBox txtPrecio;
         protected global::System.Web.UI.WebControls.TextBox txtCupos;
         protected global::System.Web.UI.WebControls.Button btnCrear;
+        protected global::System.Web.UI.WebControls.DropDownList ddlFiltro;
         protected global::System.Web.UI.WebControls.GridView gvVuelosAdmin;
     }
 }

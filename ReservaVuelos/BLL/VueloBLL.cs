@@ -9,10 +9,11 @@ namespace ReservaVuelos.BLL
     {
         private VueloDAL _dal = new VueloDAL();
 
-        public List<Vuelo> Search(string origen, string destino, DateTime? fecha) => _dal.Search(origen, destino, fecha);
+        public List<Vuelo> Search(string origen, string destino, DateTime? fecha, string estado = "Activos") => _dal.Search(origen, destino, fecha, estado);
         public Vuelo GetById(int id) => _dal.GetById(id);
         public int Create(Vuelo v) => _dal.Create(v);
         public void UpdateSeats(int idVuelo, int delta) => _dal.UpdateSeats(idVuelo, delta);
-        public bool SoftDelete(int id) => _dal.SoftDelete(id) > 0;
+        // devuelve la cantidad de reservas canceladas; -1 si el vuelo no existe
+        public int SoftDelete(int id) => _dal.SoftDelete(id);
     }
 }

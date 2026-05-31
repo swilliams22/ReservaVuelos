@@ -15,7 +15,9 @@ namespace ReservaVuelos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-
+            // asociar datalist a textboxes para sugerencias
+            txtOrigen.Attributes["list"] = "listaCiudadesBusqueda";
+            txtDestino.Attributes["list"] = "listaCiudadesBusqueda";
         }
 
         protected void btnBuscar_Click(object sender, EventArgs e)

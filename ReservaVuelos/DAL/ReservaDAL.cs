@@ -55,9 +55,10 @@ namespace ReservaVuelos.DAL
 
         public List<Reserva> GetByUsuario(int idUsuario)
         {
+            // traer reservas del usuario junto con datos del vuelo
             var res = new List<Reserva>();
             using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Reservas WHERE IdUsuario = @IdUsuario", cn))
+            using (var cmd = new SqlCommand(@"SELECT r.*, v.Origen, v.Destino, v.FechaSalida, v.HoraSalida, v.Precio FROM Reservas r INNER JOIN Vuelos v ON r.IdVuelo = v.IdVuelo WHERE r.IdUsuario = @IdUsuario", cn))
             {
                 cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
                 cn.Open();
@@ -71,7 +72,12 @@ namespace ReservaVuelos.DAL
                             IdUsuario = Convert.ToInt32(rdr["IdUsuario"]),
                             IdVuelo = Convert.ToInt32(rdr["IdVuelo"]),
                             FechaReserva = Convert.ToDateTime(rdr["FechaReserva"]),
-                            Estado = rdr["Estado"].ToString()
+                            Estado = rdr["Estado"].ToString(),
+                            Origen = rdr["Origen"].ToString(),
+                            Destino = rdr["Destino"].ToString(),
+                            FechaSalida = Convert.ToDateTime(rdr["FechaSalida"]),
+                            HoraSalida = (TimeSpan)rdr["HoraSalida"],
+                            Precio = Convert.ToDecimal(rdr["Precio"])
                         });
                     }
                 }
