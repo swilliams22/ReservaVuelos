@@ -7,15 +7,15 @@ namespace ReservaVuelos.DAL
 {
     public class VueloDAL
     {
-        public List<Vuelo> Search(string origen, string destino, DateTime? fecha, string estado = "Activos")
+        public List<Vuelo> Search(string origen, string destino, DateTime? fecha, string estado = "Activos", DateTime? fechaMinima = null)
         {
             var res = new List<Vuelo>();
             using (var cn = ConexionDAL.GetConnection())
             {
                 // construir consulta según filtro de estado
-                string sql = "SELECT * FROM Vuelos WHERE (@Origen IS NULL OR Origen LIKE @OrigenLike) AND (@Destino IS NULL OR Destino LIKE @DestinoLike) AND (@Fecha IS NULL OR FechaSalida = @Fecha)";
-                if (string.Equals(estado, "Activos", StringComparison.OrdinalIgnoreCase)) sql = "SELECT * FROM Vuelos WHERE Activo = 1 AND (@Origen IS NULL OR Origen LIKE @OrigenLike) AND (@Destino IS NULL OR Destino LIKE @DestinoLike) AND (@Fecha IS NULL OR FechaSalida = @Fecha)";
-                else if (string.Equals(estado, "Baja", StringComparison.OrdinalIgnoreCase) || string.Equals(estado, "Dados de baja", StringComparison.OrdinalIgnoreCase)) sql = "SELECT * FROM Vuelos WHERE Activo = 0 AND (@Origen IS NULL OR Origen LIKE @OrigenLike) AND (@Destino IS NULL OR Destino LIKE @DestinoLike) AND (@Fecha IS NULL OR FechaSalida = @Fecha)";
+                string sql = "SELECT * FROM Vuelos WHERE (@Origen IS NULL OR Origen LIKE @OrigenLike) AND (@Destino IS NULL OR Destino LIKE @DestinoLike) AND (@Fecha IS NULL OR FechaSalida = @Fecha) AND (@FechaMinima IS NULL OR FechaSalida > @FechaMinima)";
+                if (string.Equals(estado, "Activos", StringComparison.OrdinalIgnoreCase)) sql = "SELECT * FROM Vuelos WHERE Activo = 1 AND (@Origen IS NULL OR Origen LIKE @OrigenLike) AND (@Destino IS NULL OR Destino LIKE @DestinoLike) AND (@Fecha IS NULL OR FechaSalida = @Fecha) AND (@FechaMinima IS NULL OR FechaSalida > @FechaMinima)";
+                else if (string.Equals(estado, "Baja", StringComparison.OrdinalIgnoreCase) || string.Equals(estado, "Dados de baja", StringComparison.OrdinalIgnoreCase)) sql = "SELECT * FROM Vuelos WHERE Activo = 0 AND (@Origen IS NULL OR Origen LIKE @OrigenLike) AND (@Destino IS NULL OR Destino LIKE @DestinoLike) AND (@Fecha IS NULL OR FechaSalida = @Fecha) AND (@FechaMinima IS NULL OR FechaSalida > @FechaMinima)";
                 using (var cmd = new SqlCommand(sql, cn))
                 {
                     cmd.Parameters.AddWithValue("@Origen", string.IsNullOrWhiteSpace(origen) ? (object)DBNull.Value : origen);
@@ -23,6 +23,7 @@ namespace ReservaVuelos.DAL
                     cmd.Parameters.AddWithValue("@Destino", string.IsNullOrWhiteSpace(destino) ? (object)DBNull.Value : destino);
                     cmd.Parameters.AddWithValue("@DestinoLike", string.IsNullOrWhiteSpace(destino) ? (object)DBNull.Value : ("%" + destino + "%"));
                     cmd.Parameters.AddWithValue("@Fecha", fecha.HasValue ? (object)fecha.Value.Date : (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@FechaMinima", fechaMinima.HasValue ? (object)fechaMinima.Value.Date : (object)DBNull.Value);
                     cn.Open();
                     using (var rdr = cmd.ExecuteReader())
                     {

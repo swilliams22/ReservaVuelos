@@ -11,7 +11,7 @@ namespace ReservaVuelos
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Redirigir al buscador de vuelos como página principal
+            // Redirigir al buscador de vuelos como pagina principal
             Response.Redirect("~/BuscarVuelos.aspx");
         }
     }

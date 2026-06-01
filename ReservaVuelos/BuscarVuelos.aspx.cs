@@ -15,56 +15,74 @@ namespace ReservaVuelos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            // asociar datalist a textboxes para sugerencias
+            // Asociar datalist a textboxes para sugerencias.
             txtOrigen.Attributes["list"] = "listaCiudadesBusqueda";
             txtDestino.Attributes["list"] = "listaCiudadesBusqueda";
         }
 
+        private DateTime? ObtenerFechaOpcional(string valor)
+        {
+            if (string.IsNullOrWhiteSpace(valor))
+                return null;
+
+            DateTime fecha;
+            if (DateTime.TryParse(valor, out fecha))
+                return fecha.Date;
+
+            return null;
+        }
+
         protected void btnBuscar_Click(object sender, EventArgs e)
         {
-            DateTime? fecha = null;
-            DateTime? fechaVuelta = null;
-            if (!string.IsNullOrWhiteSpace(txtFecha.Text))
+            lblMsg.ForeColor = System.Drawing.Color.Red;
+            lblMsg.Text = "";
+
+            DateTime? fechaIda = ObtenerFechaOpcional(txtFecha.Text);
+            DateTime? fechaVuelta = ObtenerFechaOpcional(txtFechaVuelta.Text);
+
+            // Las fechas son opcionales. Solo validamos el orden si ambas fueron informadas.
+            if (fechaIda.HasValue && fechaVuelta.HasValue && fechaVuelta.Value.Date <= fechaIda.Value.Date)
             {
-                DateTime f;
-                if (DateTime.TryParse(txtFecha.Text, out f)) fecha = f;
-            }
-            if (!string.IsNullOrWhiteSpace(txtFechaVuelta.Text))
-            {
-                DateTime fv;
-                if (DateTime.TryParse(txtFechaVuelta.Text, out fv)) fechaVuelta = fv;
+                lblMsg.Text = "La fecha de vuelta debe ser posterior a la fecha de ida.";
+                return;
             }
 
-            // Si es ida y vuelta validar fechas
-            if (ddlTipoViaje != null && ddlTipoViaje.SelectedValue == "IdaVuelta")
-            {
-                if (!fecha.HasValue || !fechaVuelta.HasValue)
-                {
-                    lblMsg.Text = "Ingrese fechas de ida y vuelta.";
-                    return;
-                }
-                if (fechaVuelta.Value.Date < fecha.Value.Date)
-                {
-                    lblMsg.Text = "La fecha de vuelta no puede ser anterior a la fecha de ida.";
-                    return;
-                }
-            }
+            string origen = txtOrigen.Text.Trim();
+            string destino = txtDestino.Text.Trim();
 
-            var lista = _vBLL.Search(txtOrigen.Text.Trim(), txtDestino.Text.Trim(), fecha);
-            gvVuelos.DataSource = lista;
+            // Si no se cargan filtros, Search devuelve todos los vuelos activos.
+            var listaIda = _vBLL.Search(origen, destino, fechaIda, "Activos");
+            gvVuelos.DataSource = listaIda;
             gvVuelos.DataBind();
 
-            // Si es ida y vuelta y hay fecha vuelta, mostrar sugerencias para la vuelta (origen/destino invertidos)
-            if (ddlTipoViaje != null && ddlTipoViaje.SelectedValue == "IdaVuelta" && fechaVuelta.HasValue)
+            if (listaIda.Count == 0)
+                lblMsg.Text = "No se encontraron vuelos para la búsqueda seleccionada.";
+
+            // Si el usuario selecciona Ida y vuelta, buscar el tramo inverso.
+            // La vuelta debe ser posterior a la fecha de ida cuando hay fecha de ida.
+            if (ddlTipoViaje != null && ddlTipoViaje.SelectedValue == "IdaVuelta" &&
+                !string.IsNullOrWhiteSpace(origen) && !string.IsNullOrWhiteSpace(destino))
             {
-                var listaReturn = _vBLL.Search(txtDestino.Text.Trim(), txtOrigen.Text.Trim(), fechaVuelta);
+                var listaVuelta = _vBLL.Search(
+                    destino,
+                    origen,
+                    fechaVuelta,
+                    "Activos",
+                    fechaIda
+                );
+
                 gvVuelosReturn.Visible = true;
                 lblVueltaTitle.Visible = true;
-                gvVuelosReturn.DataSource = listaReturn;
+                gvVuelosReturn.DataSource = listaVuelta;
                 gvVuelosReturn.DataBind();
+
+                if (listaVuelta.Count == 0)
+                    lblMsg.Text = "No se encontraron vuelos de vuelta disponibles.";
             }
             else
             {
+                gvVuelosReturn.DataSource = null;
+                gvVuelosReturn.DataBind();
                 gvVuelosReturn.Visible = false;
                 lblVueltaTitle.Visible = false;
             }
@@ -74,40 +92,97 @@ namespace ReservaVuelos
         {
             if (e.CommandName == "Reservar")
             {
-                // CommandArgument contiene IdVuelo (ver TemplateField en la .aspx)
+                // CommandArgument contiene IdVuelo (ver TemplateField en la .aspx).
                 int id = Convert.ToInt32(e.CommandArgument);
                 var user = SesionService.GetUser();
                 if (user == null)
                 {
-                    // debe loguearse
+                    // Debe loguearse.
                     Session["ReturnUrl"] = "BuscarVuelos.aspx";
                     Response.Redirect("Login.aspx");
                     return;
                 }
-                // verificar si ya existe reserva activa para este usuario y vuelo
+
+                // Verificar si ya existe reserva activa para este usuario y vuelo.
                 if (_rBLL.ExistsActiveReservation(user.IdUsuario, id))
                 {
+                    lblMsg.ForeColor = System.Drawing.Color.Red;
                     lblMsg.Text = "Ya tiene una reserva activa para este vuelo.";
                     return;
                 }
 
-                // crear reserva
-                var r = new Reserva { IdUsuario = user.IdUsuario, IdVuelo = id, FechaReserva = DateTime.Now, Estado = "Activa" };
+                var r = new Reserva
+                {
+                    IdUsuario = user.IdUsuario,
+                    IdVuelo = id,
+                    FechaReserva = DateTime.Now,
+                    Estado = "Activa"
+                };
+
                 try
                 {
                     var idReserva = _rBLL.Create(r);
-                    // Reserva creada -> Info
-                    _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = $"Reserva creada. IdReserva: {idReserva} - IdVuelo: {id}", Criticidad = "Info", Pantalla = "BuscarVuelos" });
+                    _bBLL.Create(new ReservaVuelos.BE.Bitacora
+                    {
+                        Fecha = DateTime.Now,
+                        Usuario = user.Email,
+                        Accion = $"Reserva creada. IdReserva: {idReserva} - IdVuelo: {id}",
+                        Criticidad = "Info",
+                        Pantalla = "BuscarVuelos"
+                    });
+
+                    // Actualizar resultados para reflejar cupos y mantener mensaje de éxito.
+                    btnBuscar_Click(null, null);
                     lblMsg.ForeColor = System.Drawing.Color.Green;
                     lblMsg.Text = "Reserva creada correctamente.";
-                    // actualizar resultados de búsqueda para reflejar cupos
-                    btnBuscar_Click(null, null);
                 }
                 catch (Exception ex)
                 {
+                    lblMsg.ForeColor = System.Drawing.Color.Red;
                     lblMsg.Text = "Error: " + ex.Message;
                 }
             }
+            else if (e.CommandName == "VerVueltas")
+            {
+                int idVuelo = Convert.ToInt32(e.CommandArgument);
+                Vuelo vueloIda = _vBLL.GetById(idVuelo);
+
+                if (vueloIda == null)
+                {
+                    lblMsg.ForeColor = System.Drawing.Color.Red;
+                    lblMsg.Text = "No se pudo obtener el vuelo seleccionado.";
+                    return;
+                }
+
+                DateTime? fechaVuelta = ObtenerFechaOpcional(txtFechaVuelta.Text);
+
+                // Si el usuario cargó fecha de vuelta, debe ser posterior a la fecha del vuelo de ida seleccionado.
+                if (fechaVuelta.HasValue && fechaVuelta.Value.Date <= vueloIda.FechaSalida.Date)
+                {
+                    lblMsg.ForeColor = System.Drawing.Color.Red;
+                    lblMsg.Text = "La fecha de vuelta debe ser posterior a la fecha de ida seleccionada.";
+                    return;
+                }
+
+                var vuelosVuelta = _vBLL.Search(
+                    vueloIda.Destino,
+                    vueloIda.Origen,
+                    fechaVuelta,
+                    "Activos",
+                    vueloIda.FechaSalida.Date
+                );
+
+                gvVuelosReturn.Visible = true;
+                lblVueltaTitle.Visible = true;
+                gvVuelosReturn.DataSource = vuelosVuelta;
+                gvVuelosReturn.DataBind();
+
+                lblMsg.ForeColor = System.Drawing.Color.Red;
+                lblMsg.Text = vuelosVuelta.Count == 0
+                    ? "No se encontraron vuelos de vuelta disponibles."
+                    : "";
+            }
         }
+
     }
 }

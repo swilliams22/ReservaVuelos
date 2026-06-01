@@ -34,28 +34,24 @@
         }
 
         function validateDates() {
-            var ddl = document.getElementById('<%= ddlTipoViaje.ClientID %>');
             var fechaIda = document.getElementById('<%= txtFecha.ClientID %>');
             var fechaVuelta = document.getElementById('<%= txtFechaVuelta.ClientID %>');
             var lbl = document.getElementById('<%= lblMsg.ClientID %>');
-            if (!ddl || !fechaIda || !lbl) return true;
+            if (!fechaIda || !fechaVuelta || !lbl) return true;
+
             lbl.innerText = '';
-            if (ddl.value === 'IdaVuelta') {
-                if (!fechaIda.value || !fechaVuelta.value) {
-                    lbl.style.color = 'red';
-                    lbl.innerText = 'Ingrese fechas de ida y vuelta.';
-                    return false;
-                }
+
+            // Las fechas son opcionales. Solo se valida el orden cuando ambas fueron informadas.
+            if (fechaIda.value && fechaVuelta.value) {
                 var d1 = new Date(fechaIda.value);
                 var d2 = new Date(fechaVuelta.value);
-                if (d2 < d1) {
+                if (d2 <= d1) {
                     lbl.style.color = 'red';
-                    lbl.innerText = 'La fecha de vuelta no puede ser anterior a la fecha de ida.';
+                    lbl.innerText = 'La fecha de vuelta debe ser posterior a la fecha de ida.';
                     return false;
                 }
             }
-            // clear message and allow postback
-            lbl.innerText = '';
+
             return true;
         }
 
@@ -104,6 +100,7 @@
             <asp:TemplateField>
                 <ItemTemplate>
                     <asp:Button runat="server" ID="btnReservar" CssClass="btn-grid" Text="Reservar" CommandName="Reservar" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return showConfirm('Confirma reservar este vuelo?', this);" />
+                    <asp:Button runat="server" ID="btnVerVueltas" CssClass="btn-grid" Text="Ver vueltas" CommandName="VerVueltas" CommandArgument='<%# Eval("IdVuelo") %>' />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

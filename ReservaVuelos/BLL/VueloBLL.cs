@@ -9,7 +9,7 @@ namespace ReservaVuelos.BLL
     {
         private VueloDAL _dal = new VueloDAL();
 
-        public List<Vuelo> Search(string origen, string destino, DateTime? fecha, string estado = "Activos") => _dal.Search(origen, destino, fecha, estado);
+        public List<Vuelo> Search(string origen, string destino, DateTime? fecha, string estado = "Activos", DateTime? fechaMinima = null) => _dal.Search(origen, destino, fecha, estado, fechaMinima);
         public Vuelo GetById(int id) => _dal.GetById(id);
         public int Create(Vuelo v) => _dal.Create(v);
         public void UpdateSeats(int idVuelo, int delta) => _dal.UpdateSeats(idVuelo, delta);
