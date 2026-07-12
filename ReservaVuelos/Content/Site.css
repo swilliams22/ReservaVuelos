@@ -125,3 +125,253 @@ textarea {
         font-size: 18px;
     }
 }
+
+/* ==========================================================
+   Buscador de vuelos - estilo inspirado en el diseño de Figma
+   ========================================================== */
+
+/* Navbar del sitio: mismo azul que el hero-banner, en vez del negro por defecto de Bootstrap */
+.bg-brand {
+    background-color: #0b2d55 !important;
+}
+
+.hero-banner {
+    background: linear-gradient(135deg, #0b2d55 0%, #0d3a6e 100%);
+    color: #fff;
+    text-align: center;
+    padding: 40px 20px 70px;
+    margin-top: 0;
+    /* Bleed to full viewport width so it looks like one continuous
+       block with the navbar above, instead of a separate rounded card. */
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+}
+
+/* Cancela el margin-top de .body-content solo cuando el hero es el primer
+   elemento de la pagina, para que quede pegado al navbar sin dejar franja blanca. */
+.body-content > .hero-banner:first-child {
+    margin-top: -15px;
+}
+
+/* Evita cualquier scroll horizontal por el truco de ancho completo (100vw) de arriba */
+html, body {
+    overflow-x: hidden;
+}
+
+    .hero-banner h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: .02em;
+    }
+
+.hero-sep {
+    color: rgba(255,255,255,0.5);
+    margin: 0 6px;
+}
+
+.hero-accent {
+    color: #4fc3f7;
+}
+
+.search-card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    max-width: 920px;
+    margin: -50px auto 30px;
+    padding: 20px 24px 28px;
+    position: relative;
+    z-index: 2;
+}
+
+.search-tabs {
+    display: flex;
+    gap: 28px;
+    justify-content: center;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+}
+
+    .search-tabs a {
+        color: #6c757d;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+        letter-spacing: .02em;
+        padding-bottom: 10px;
+    }
+
+        .search-tabs a.active {
+            color: #0d3a6e;
+            border-bottom: 3px solid #0d3a6e;
+        }
+
+        .search-tabs a.disabled {
+            color: #c7cbd1;
+            cursor: default;
+            pointer-events: none;
+        }
+
+.search-msg {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.trip-type {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-bottom: 18px;
+    font-size: 14px;
+    color: #333;
+}
+
+    .trip-type label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .trip-type-disabled {
+        color: #c7cbd1;
+        cursor: default;
+    }
+
+.search-fields {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.search-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+}
+
+    .search-field label {
+        font-size: 11px;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .search-field input {
+        border: none;
+        border-bottom: 1px solid #ccc;
+        padding: 6px 4px;
+        font-size: 14px;
+        background: transparent;
+        max-width: 100%;
+    }
+
+        .search-field input:focus {
+            outline: none;
+            border-bottom-color: #0d3a6e;
+        }
+
+.swap-btn {
+    border: 1px solid #ccc;
+    background: #fff;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    line-height: 1;
+    color: #0d3a6e;
+    cursor: pointer;
+    align-self: center;
+    margin-bottom: 6px;
+}
+
+    .swap-btn:hover {
+        background: #f0f5fa;
+    }
+
+.search-actions {
+    text-align: center;
+}
+
+.btn-buscar {
+    display: inline-block;
+    background: #2f6690;
+    color: #fff;
+    border: none;
+    border-radius: 24px;
+    padding: 12px 40px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+    .btn-buscar:hover {
+        background: #24506f;
+        color: #fff;
+    }
+
+/* Pagina placeholder para secciones que todavia no existen (Check-in, Estado de vuelo) */
+.en-construccion {
+    text-align: center;
+    padding: 50px 24px 60px;
+}
+
+.en-construccion-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.en-construccion h2 {
+    color: #0d3a6e;
+    margin: 0 0 10px;
+}
+
+.en-construccion p {
+    color: #6c757d;
+    margin: 0 0 24px;
+}
+
+/* Responsive: buscador en celular */
+@media screen and (max-width: 600px) {
+    .hero-banner {
+        padding: 28px 16px 50px;
+    }
+
+        .hero-banner h1 {
+            font-size: 20px;
+        }
+
+    .search-card {
+        margin: -36px 12px 24px;
+        padding: 16px;
+        border-radius: 16px;
+    }
+
+    .search-tabs {
+        gap: 14px;
+        font-size: 12px;
+    }
+
+    .search-fields {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .swap-btn {
+        align-self: center;
+        transform: rotate(90deg);
+    }
+
+    .btn-buscar {
+        width: 100%;
+    }
+}

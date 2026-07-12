@@ -60,7 +60,7 @@ namespace ReservaVuelos
 
             // Si el usuario selecciona Ida y vuelta, buscar el tramo inverso.
             // La vuelta debe ser posterior a la fecha de ida cuando hay fecha de ida.
-            if (ddlTipoViaje != null && ddlTipoViaje.SelectedValue == "IdaVuelta" &&
+            if (rbIdaVuelta.Checked &&
                 !string.IsNullOrWhiteSpace(origen) && !string.IsNullOrWhiteSpace(destino))
             {
                 var listaVuelta = _vBLL.Search(

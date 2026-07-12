@@ -1,36 +1,75 @@
 <%@ Page Title="Buscar vuelos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="BuscarVuelos.aspx.cs" Inherits="ReservaVuelos.BuscarVuelos" %>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
-    <h2>Buscar vuelos</h2>
-    <asp:Label ID="lblMsg" runat="server" ForeColor="Red"></asp:Label>
-    <div>
-        <asp:Label runat="server" Text="Origen"></asp:Label>
-        <asp:TextBox ID="txtOrigen" runat="server"></asp:TextBox>
-        <asp:Label runat="server" Text="Destino"></asp:Label>
-        <asp:TextBox ID="txtDestino" runat="server"></asp:TextBox>
+    <div class="hero-banner">
+        <h1>VOLA EN CUOTAS <span class="hero-sep">|</span> <span class="hero-accent">POR ARGENTINA</span></h1>
+    </div>
 
-        <asp:Label runat="server" Text="Tipo de viaje"></asp:Label>
-        <asp:DropDownList ID="ddlTipoViaje" runat="server" onchange="toggleReturn();">
-            <asp:ListItem Value="SoloIda" Selected="True">Solo ida</asp:ListItem>
-            <asp:ListItem Value="IdaVuelta">Ida y vuelta</asp:ListItem>
-        </asp:DropDownList>
+    <div class="search-card">
+        <nav class="search-tabs">
+            <a href="BuscarVuelos.aspx" class="active">&#9992; VUELOS</a>
+            <a href="EnConstruccion.aspx">CHECK-IN</a>
+            <a href="EnConstruccion.aspx">ESTADO DE VUELO</a>
+            <a href="MisReservas.aspx">MI RESERVA</a>
+        </nav>
 
-        <asp:Label runat="server" Text="Fecha ida"></asp:Label>
-        <asp:TextBox ID="txtFecha" runat="server" TextMode="Date"></asp:TextBox>
+        <asp:Label ID="lblMsg" runat="server" CssClass="search-msg" ForeColor="Red"></asp:Label>
 
-        <span id="spanVuelta" style="display:none;">
-            <asp:Label runat="server" Text="Fecha vuelta"></asp:Label>
-            <asp:TextBox ID="txtFechaVuelta" runat="server" TextMode="Date"></asp:TextBox>
-        </span>
+        <div class="trip-type">
+            <label>
+                <asp:RadioButton ID="rbIda" runat="server" GroupName="TipoViaje" Text="Ida" onclick="toggleReturn();" />
+            </label>
+            <label>
+                <asp:RadioButton ID="rbIdaVuelta" runat="server" GroupName="TipoViaje" Text="Ida y vuelta" Checked="True" onclick="toggleReturn();" />
+            </label>
+            <label class="trip-type-disabled" title="Proximamente">
+                <input type="radio" disabled="disabled" /> Multidestino
+            </label>
+        </div>
 
-        <asp:Button ID="btnBuscar" runat="server" Text="Buscar" OnClick="btnBuscar_Click" OnClientClick="return validateDates();" />
+        <div class="search-fields">
+            <div class="search-field">
+                <label for="<%= txtOrigen.ClientID %>">Origen</label>
+                <asp:TextBox ID="txtOrigen" runat="server" placeholder="Ciudad de origen"></asp:TextBox>
+            </div>
+
+            <button type="button" class="swap-btn" onclick="swapOrigenDestino(); return false;" title="Intercambiar origen y destino">&#8646;</button>
+
+            <div class="search-field">
+                <label for="<%= txtDestino.ClientID %>">Destino</label>
+                <asp:TextBox ID="txtDestino" runat="server" placeholder="Ciudad de destino"></asp:TextBox>
+            </div>
+
+            <div class="search-field">
+                <label for="<%= txtFecha.ClientID %>">Salida</label>
+                <asp:TextBox ID="txtFecha" runat="server" TextMode="Date"></asp:TextBox>
+            </div>
+
+            <span id="spanVuelta" class="search-field" style="display:none;">
+                <label for="<%= txtFechaVuelta.ClientID %>">Regreso</label>
+                <asp:TextBox ID="txtFechaVuelta" runat="server" TextMode="Date"></asp:TextBox>
+            </span>
+        </div>
+
+        <div class="search-actions">
+            <asp:Button ID="btnBuscar" runat="server" CssClass="btn-buscar" Text="BUSCAR VUELOS" OnClick="btnBuscar_Click" OnClientClick="return validateDates();" />
+        </div>
     </div>
 
     <script type="text/javascript">
         function toggleReturn() {
-            var ddl = document.getElementById('<%= ddlTipoViaje.ClientID %>');
+            var rbIdaVuelta = document.getElementById('<%= rbIdaVuelta.ClientID %>');
             var span = document.getElementById('spanVuelta');
-            if (!ddl || !span) return;
-            if (ddl.value === 'IdaVuelta') span.style.display = 'inline-block'; else span.style.display = 'none';
+            if (!rbIdaVuelta || !span) return;
+            if (rbIdaVuelta.checked) span.style.display = 'inline-flex'; else span.style.display = 'none';
+        }
+
+        function swapOrigenDestino() {
+            var o = document.getElementById('<%= txtOrigen.ClientID %>');
+            var d = document.getElementById('<%= txtDestino.ClientID %>');
+            if (!o || !d) return;
+            var tmp = o.value;
+            o.value = d.value;
+            d.value = tmp;
         }
 
         function validateDates() {
