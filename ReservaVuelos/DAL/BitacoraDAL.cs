@@ -15,7 +15,7 @@ namespace ReservaVuelos.DAL
                 cmd.Parameters.AddWithValue("@Fecha", b.Fecha);
                 cmd.Parameters.AddWithValue("@Usuario", b.Usuario ?? string.Empty);
                 cmd.Parameters.AddWithValue("@Accion", b.Accion ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Criticidad", b.Criticidad ?? string.Empty);
+                cmd.Parameters.AddWithValue("@Criticidad", b.Criticidad);
                 cmd.Parameters.AddWithValue("@Pantalla", b.Pantalla ?? string.Empty);
                 cn.Open();
                 return Convert.ToInt32(cmd.ExecuteScalar());
@@ -39,7 +39,7 @@ namespace ReservaVuelos.DAL
                             Fecha = Convert.ToDateTime(rdr["Fecha"]),
                             Usuario = rdr["Usuario"].ToString(),
                             Accion = rdr["Accion"].ToString(),
-                            Criticidad = rdr["Criticidad"].ToString(),
+                            Criticidad = Convert.ToInt32(rdr["Criticidad"]),
                             Pantalla = rdr["Pantalla"].ToString()
                         });
                     }
@@ -48,7 +48,7 @@ namespace ReservaVuelos.DAL
             return res;
         }
 
-        public List<ReservaVuelos.BE.Bitacora> GetByFilters(DateTime? desde, DateTime? hasta, string usuario, string criticidad, string pantalla)
+        public List<ReservaVuelos.BE.Bitacora> GetByFilters(DateTime? desde, DateTime? hasta, string usuario, int? criticidad, string pantalla)
         {
             var res = new List<ReservaVuelos.BE.Bitacora>();
             using (var cn = ConexionDAL.GetConnection())
@@ -57,7 +57,7 @@ namespace ReservaVuelos.DAL
                 if (desde.HasValue) sql += " AND Fecha >= @Desde";
                 if (hasta.HasValue) sql += " AND Fecha <= @Hasta";
                 if (!string.IsNullOrWhiteSpace(usuario)) sql += " AND Usuario LIKE @Usuario";
-                if (!string.IsNullOrWhiteSpace(criticidad) && criticidad != "Todos") sql += " AND Criticidad = @Criticidad";
+                if (criticidad.HasValue) sql += " AND Criticidad = @Criticidad";
                 if (!string.IsNullOrWhiteSpace(pantalla)) sql += " AND Pantalla LIKE @Pantalla";
                 sql += " ORDER BY Fecha DESC";
 
@@ -66,7 +66,7 @@ namespace ReservaVuelos.DAL
                     if (desde.HasValue) cmd.Parameters.AddWithValue("@Desde", desde.Value);
                     if (hasta.HasValue) cmd.Parameters.AddWithValue("@Hasta", hasta.Value);
                     if (!string.IsNullOrWhiteSpace(usuario)) cmd.Parameters.AddWithValue("@Usuario", "%" + usuario + "%");
-                    if (!string.IsNullOrWhiteSpace(criticidad) && criticidad != "Todos") cmd.Parameters.AddWithValue("@Criticidad", criticidad);
+                    if (criticidad.HasValue) cmd.Parameters.AddWithValue("@Criticidad", criticidad.Value);
                     if (!string.IsNullOrWhiteSpace(pantalla)) cmd.Parameters.AddWithValue("@Pantalla", "%" + pantalla + "%");
                     cn.Open();
                     using (var rdr = cmd.ExecuteReader())
@@ -79,7 +79,7 @@ namespace ReservaVuelos.DAL
                                 Fecha = Convert.ToDateTime(rdr["Fecha"]),
                                 Usuario = rdr["Usuario"].ToString(),
                                 Accion = rdr["Accion"].ToString(),
-                                Criticidad = rdr["Criticidad"].ToString(),
+                                Criticidad = Convert.ToInt32(rdr["Criticidad"]),
                                 Pantalla = rdr["Pantalla"].ToString()
                             });
                         }

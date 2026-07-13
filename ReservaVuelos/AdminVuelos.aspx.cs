@@ -3,7 +3,6 @@ using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
 using System.Globalization;
-using System.Linq;
 
 namespace ReservaVuelos
 {
@@ -27,7 +26,7 @@ namespace ReservaVuelos
 
             if (!IsPostBack)
             {
-                // cargar grilla según filtro (por defecto Activos)
+                // cargar grilla segÃºn filtro (por defecto Activos)
                 BindGrid();
             }
         }
@@ -42,12 +41,10 @@ namespace ReservaVuelos
                     var canceledCount = _vBLL.SoftDelete(id);
                     if (canceledCount >= 0)
                     {
-                    // Baja de vuelo -> Info
-                    _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo dado de baja. IdVuelo: {id}", Criticidad = "Info", Pantalla = "AdminVuelos" });
+                        _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo dado de baja. IdVuelo: {id}", Criticidad = 1, Pantalla = "AdminVuelos" });
                         if (canceledCount > 0)
                         {
-                            // Cancelaciones por baja de vuelo -> Info
-                            _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Reservas canceladas por baja de vuelo. IdVuelo: {id} - Cantidad: {canceledCount}", Criticidad = "Info", Pantalla = "AdminVuelos" });
+                            _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Reservas canceladas por baja de vuelo. IdVuelo: {id} - Cantidad: {canceledCount}", Criticidad = 1, Pantalla = "AdminVuelos" });
                         }
                         BindGrid();
                         lblMsg.ForeColor = System.Drawing.Color.Green;
@@ -55,11 +52,12 @@ namespace ReservaVuelos
                     }
                     else
                     {
-                        lblMsg.Text = "No se encontró el vuelo.";
+                        lblMsg.Text = "No se encontrÃ³ el vuelo.";
                     }
                 }
                 catch (Exception ex)
                 {
+                    if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                     lblMsg.Text = "Error: " + ex.Message;
                 }
             }
@@ -94,14 +92,14 @@ namespace ReservaVuelos
                     Activo = true
                 };
                 var idVuelo = _vBLL.Create(v);
-                // Creación de vuelo -> Info
-                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo creado. IdVuelo: {idVuelo}", Criticidad = "Info", Pantalla = "AdminVuelos" });
+                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo creado. IdVuelo: {idVuelo}", Criticidad = 1, Pantalla = "AdminVuelos" });
                 BindGrid();
                 lblMsg.ForeColor = System.Drawing.Color.Green;
                 lblMsg.Text = "Vuelo creado.";
             }
             catch (Exception ex)
             {
+                if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                 lblMsg.Text = "Error: " + ex.Message;
             }
         }

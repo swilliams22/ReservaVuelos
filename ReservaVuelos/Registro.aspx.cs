@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.Servicios;
 using System;
 
@@ -36,7 +36,7 @@ namespace ReservaVuelos
             {
                 var id = srv.RegistrarUsuario(usuario, pwd);
                 // redirigir a login mostrando mensaje
-                Response.Redirect("Login.aspx?msg=" + Server.UrlEncode("Usuario creado correctamente. Inicie sesi�n."));
+                Response.Redirect("Login.aspx?msg=" + Server.UrlEncode("Usuario creado correctamente. Inicie sesión."));
             }
             catch (Exception ex)
             {
@@ -45,3 +45,4 @@ namespace ReservaVuelos
         }
     }
 }
+

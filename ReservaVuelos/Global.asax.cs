@@ -6,6 +6,7 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using System.Web.Security;
 using System.Web.SessionState;
+using ReservaVuelos.Servicios;
 
 namespace ReservaVuelos
 {
@@ -16,6 +17,7 @@ namespace ReservaVuelos
             // Código que se ejecuta al iniciar la aplicación
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+            new IntegrityService().EnsureStartupValidation();
         }
     }
 }

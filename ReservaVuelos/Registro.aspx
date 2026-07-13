@@ -1,4 +1,4 @@
-<%@ Page Title="Registro" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Registro.aspx.cs" Inherits="ReservaVuelos.Registro" %>
+ï»¿<%@ Page Title="Registro" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="Registro.aspx.cs" Inherits="ReservaVuelos.Registro" %>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <h2>Registro</h2>
     <asp:Label ID="lblMsg" runat="server" ForeColor="Red"></asp:Label>
@@ -7,9 +7,10 @@
         <asp:TextBox ID="txtNombre" runat="server"></asp:TextBox><br />
         <asp:Label runat="server" Text="Email"></asp:Label><br />
         <asp:TextBox ID="txtEmail" runat="server"></asp:TextBox><br />
-        <asp:Label runat="server" Text="Contraseña"></asp:Label><br />
+        <asp:Label runat="server" Text="ContraseÃ±a"></asp:Label><br />
         <asp:TextBox ID="txtPassword" runat="server" TextMode="Password"></asp:TextBox>
-        &nbsp;<input type="checkbox" id="chkShowPwdReg" onclick="(function(){var p=document.getElementById('<%= txtPassword.ClientID %>'); p.type = this.checked ? 'text' : 'password';}).call(this);" /> Mostrar contraseña<br />
+        &nbsp;<input type="checkbox" id="chkShowPwdReg" onclick="(function(){var p=document.getElementById('<%= txtPassword.ClientID %>'); p.type = this.checked ? 'text' : 'password';}).call(this);" /> Mostrar ContraseÃ±a<br />
         <asp:Button ID="btnRegister" runat="server" Text="Registrarme" OnClick="btnRegister_Click" OnClientClick="return showConfirm('Confirma crear este usuario?', this);" />
     </div>
 </asp:Content>
+

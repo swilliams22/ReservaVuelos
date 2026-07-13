@@ -1,9 +1,9 @@
-using System.Web;
+﻿using System.Web;
 using ReservaVuelos.BE;
 
 namespace ReservaVuelos.Servicios
 {
-    // Servicio simple para manejo de sesi�n usando HttpContext.Current
+    // Servicio simple para manejo de sesión usando HttpContext.Current
     public static class SesionService
     {
         public static void SetUser(Usuario u)
@@ -22,3 +22,4 @@ namespace ReservaVuelos.Servicios
         }
     }
 }
+

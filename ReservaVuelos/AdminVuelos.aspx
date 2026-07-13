@@ -1,7 +1,8 @@
-<%@ Page Title="Administración de vuelos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="AdminVuelos.aspx.cs" Inherits="ReservaVuelos.AdminVuelos" %>
+ï»¿<%@ Page Title="AdministraciÃ³n de vuelos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="AdminVuelos.aspx.cs" Inherits="ReservaVuelos.AdminVuelos" %>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
-    <h2>Administración de vuelos</h2>
+    <h2>AdministraciÃ³n de vuelos</h2>
     <asp:Label ID="lblMsg" runat="server" ForeColor="Red"></asp:Label>
+
     <h3>Crear vuelo</h3>
     <div>
         <asp:TextBox ID="txtOrigen" runat="server" Placeholder="Origen"></asp:TextBox>
@@ -23,25 +24,25 @@
     <!-- Datalists para sugerencias de origen/destino -->
     <datalist id="listaCiudades">
         <option value="Buenos Aires"></option>
-        <option value="Córdoba"></option>
+        <option value="CÃ³rdoba"></option>
         <option value="Mendoza"></option>
         <option value="Rosario"></option>
         <option value="Bariloche"></option>
         <option value="Salta"></option>
         <option value="Ushuaia"></option>
-        <option value="Iguazú"></option>
-        <option value="Neuquén"></option>
+        <option value="IguazÃº"></option>
+        <option value="NeuquÃ©n"></option>
         <option value="Mar del Plata"></option>
-        <option value="Tucumán"></option>
+        <option value="TucumÃ¡n"></option>
         <option value="Jujuy"></option>
         <option value="San Juan"></option>
         <option value="San Luis"></option>
         <option value="Santa Fe"></option>
         <option value="La Plata"></option>
-        <option value="Asunción"></option>
+        <option value="AsunciÃ³n"></option>
         <option value="Santiago de Chile"></option>
         <option value="Montevideo"></option>
-        <option value="Río de Janeiro"></option>
+        <option value="RÃ­o de Janeiro"></option>
         <option value="Madrid"></option>
         <option value="Miami"></option>
     </datalist>
@@ -68,3 +69,4 @@
         </Columns>
     </asp:GridView>
 </asp:Content>
+

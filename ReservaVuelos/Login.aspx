@@ -5,9 +5,9 @@
     <div>
         <asp:Label runat="server" Text="Email" AssociatedControlID="txtEmail"></asp:Label><br />
         <asp:TextBox ID="txtEmail" runat="server"></asp:TextBox><br />
-        <asp:Label runat="server" Text="Contraseña" AssociatedControlID="txtPassword"></asp:Label><br />
+        <asp:Label runat="server" Text="Contrase&#241;a" AssociatedControlID="txtPassword"></asp:Label><br />
         <asp:TextBox ID="txtPassword" runat="server" TextMode="Password"></asp:TextBox>
-        &nbsp;<input type="checkbox" id="chkShowPwd" onclick="(function(){var p=document.getElementById('<%= txtPassword.ClientID %>'); p.type = this.checked ? 'text' : 'password';}).call(this);" /> Mostrar contraseña<br />
+        &nbsp;<input type="checkbox" id="chkShowPwd" onclick="(function(){var p=document.getElementById('<%= txtPassword.ClientID %>'); p.type = this.checked ? 'text' : 'password';}).call(this);" /> Mostrar Contrase&#241;a<br />
         <asp:Button ID="btnLogin" runat="server" Text="Entrar" OnClick="btnLogin_Click" />
     </div>
 </asp:Content>

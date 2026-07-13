@@ -1,4 +1,5 @@
 using ReservaVuelos.BE;
+using ReservaVuelos.Servicios;
 using System;
 using System.Data;
 using System.Data.SqlClient;
@@ -27,7 +28,8 @@ namespace ReservaVuelos.DAL
                             PasswordSalt = rdr["PasswordSalt"].ToString(),
                             Rol = rdr["Rol"].ToString(),
                             Activo = Convert.ToBoolean(rdr["Activo"]),
-                            FechaAlta = Convert.ToDateTime(rdr["FechaAlta"])
+                            FechaAlta = Convert.ToDateTime(rdr["FechaAlta"]),
+                            DVH = rdr["DVH"] != DBNull.Value ? Convert.ToInt32(rdr["DVH"]) : 0
                         };
                     }
                 }
@@ -38,19 +40,36 @@ namespace ReservaVuelos.DAL
         public int Create(Usuario u)
         {
             using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"INSERT INTO Usuarios (Nombre, Email, PasswordHash, PasswordSalt, Rol, Activo, FechaAlta)
-VALUES (@Nombre,@Email,@PasswordHash,@PasswordSalt,@Rol,@Activo,@FechaAlta); SELECT SCOPE_IDENTITY();", cn))
             {
-                cmd.Parameters.AddWithValue("@Nombre", u.Nombre);
-                cmd.Parameters.AddWithValue("@Email", u.Email);
-                cmd.Parameters.AddWithValue("@PasswordHash", u.PasswordHash);
-                cmd.Parameters.AddWithValue("@PasswordSalt", u.PasswordSalt);
-                cmd.Parameters.AddWithValue("@Rol", u.Rol);
-                cmd.Parameters.AddWithValue("@Activo", u.Activo);
-                cmd.Parameters.AddWithValue("@FechaAlta", u.FechaAlta);
                 cn.Open();
-                var obj = cmd.ExecuteScalar();
-                return Convert.ToInt32(obj);
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        int id;
+                        using (var cmd = new SqlCommand(@"INSERT INTO Usuarios (Nombre, Email, PasswordHash, PasswordSalt, Rol, Activo, FechaAlta, DVH)
+VALUES (@Nombre,@Email,@PasswordHash,@PasswordSalt,@Rol,@Activo,@FechaAlta,0); SELECT SCOPE_IDENTITY();", cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@Nombre", u.Nombre);
+                            cmd.Parameters.AddWithValue("@Email", u.Email);
+                            cmd.Parameters.AddWithValue("@PasswordHash", u.PasswordHash);
+                            cmd.Parameters.AddWithValue("@PasswordSalt", u.PasswordSalt);
+                            cmd.Parameters.AddWithValue("@Rol", u.Rol);
+                            cmd.Parameters.AddWithValue("@Activo", u.Activo);
+                            cmd.Parameters.AddWithValue("@FechaAlta", u.FechaAlta);
+                            id = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        new IntegrityService().UpdateRecordAndTableDVV(cn, tran, "Usuarios", id);
+                        tran.Commit();
+                        return id;
+                    }
+                    catch
+                    {
+                        try { tran.Rollback(); } catch { }
+                        throw;
+                    }
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-<%@ Page Title="Buscar vuelos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="BuscarVuelos.aspx.cs" Inherits="ReservaVuelos.BuscarVuelos" %>
+ï»¿<%@ Page Title="Buscar vuelos" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="BuscarVuelos.aspx.cs" Inherits="ReservaVuelos.BuscarVuelos" %>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <div class="hero-banner">
         <h1>VOLA EN CUOTAS <span class="hero-sep">|</span> <span class="hero-accent">POR ARGENTINA</span></h1>
@@ -21,7 +21,7 @@
             <label>
                 <asp:RadioButton ID="rbIdaVuelta" runat="server" GroupName="TipoViaje" Text="Ida y vuelta" Checked="True" onclick="toggleReturn();" />
             </label>
-            <label class="trip-type-disabled" title="Proximamente">
+            <label class="trip-type-disabled" title="PrÃ³ximamente">
                 <input type="radio" disabled="disabled" /> Multidestino
             </label>
         </div>
@@ -48,6 +48,11 @@
                 <label for="<%= txtFechaVuelta.ClientID %>">Regreso</label>
                 <asp:TextBox ID="txtFechaVuelta" runat="server" TextMode="Date"></asp:TextBox>
             </span>
+
+            <div class="search-field">
+                <label for="<%= txtCantidadPasajeros.ClientID %>">Cantidad de pasajeros</label>
+                <asp:TextBox ID="txtCantidadPasajeros" runat="server" TextMode="Number"></asp:TextBox>
+            </div>
         </div>
 
         <div class="search-actions">
@@ -98,30 +103,30 @@
         window.addEventListener ? window.addEventListener('load', toggleReturn) : window.onload = toggleReturn;
     </script>
 
-    <p><strong>Aclaración:</strong> Las reservas se realizan por tramo. Para un viaje de ida y vuelta, reserve primero el vuelo de ida y luego el vuelo de vuelta.</p>
+    <p><strong>AclaraciÃ³n:</strong> Las reservas se realizan por tramo. Para un viaje de ida y vuelta, reserve primero el vuelo de ida y luego el vuelo de vuelta.</p>
 
     <!-- Datalist para sugerencias de ciudades -->
     <datalist id="listaCiudadesBusqueda">
         <option value="Buenos Aires"></option>
-        <option value="Córdoba"></option>
+        <option value="CÃ³rdoba"></option>
         <option value="Mendoza"></option>
         <option value="Rosario"></option>
         <option value="Bariloche"></option>
         <option value="Salta"></option>
         <option value="Ushuaia"></option>
-        <option value="Iguazú"></option>
-        <option value="Neuquén"></option>
+        <option value="IguazÃº"></option>
+        <option value="NeuquÃ©n"></option>
         <option value="Mar del Plata"></option>
-        <option value="Tucumán"></option>
+        <option value="TucumÃ¡n"></option>
         <option value="Jujuy"></option>
         <option value="San Juan"></option>
         <option value="San Luis"></option>
         <option value="Santa Fe"></option>
         <option value="La Plata"></option>
-        <option value="Asunción"></option>
+        <option value="AsunciÃ³n"></option>
         <option value="Santiago de Chile"></option>
         <option value="Montevideo"></option>
-        <option value="Río de Janeiro"></option>
+        <option value="RÃ­o de Janeiro"></option>
         <option value="Madrid"></option>
         <option value="Miami"></option>
     </datalist>
@@ -163,3 +168,4 @@
         </Columns>
     </asp:GridView>
 </asp:Content>
+

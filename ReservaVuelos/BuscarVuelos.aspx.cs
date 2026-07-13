@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
@@ -10,11 +10,20 @@ namespace ReservaVuelos
     public partial class BuscarVuelos : System.Web.UI.Page
     {
         private VueloBLL _vBLL = new VueloBLL();
-        private ReservaBLL _rBLL = new ReservaBLL();
         private BitacoraBLL _bBLL = new BitacoraBLL();
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            try
+            {
+                new IntegrityService().EnsureTableIsValid("Vuelos");
+            }
+            catch
+            {
+                if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
+                throw;
+            }
+
             // Asociar datalist a textboxes para sugerencias.
             txtOrigen.Attributes["list"] = "listaCiudadesBusqueda";
             txtDestino.Attributes["list"] = "listaCiudadesBusqueda";
@@ -32,6 +41,18 @@ namespace ReservaVuelos
             return null;
         }
 
+        private int? ObtenerCantidadPasajeros()
+        {
+            if (string.IsNullOrWhiteSpace(txtCantidadPasajeros.Text))
+                return null;
+
+            int cantidad;
+            if (!int.TryParse(txtCantidadPasajeros.Text, out cantidad))
+                return null;
+
+            return cantidad;
+        }
+
         protected void btnBuscar_Click(object sender, EventArgs e)
         {
             lblMsg.ForeColor = System.Drawing.Color.Red;
@@ -47,16 +68,24 @@ namespace ReservaVuelos
                 return;
             }
 
+            var cantidadPasajeros = ObtenerCantidadPasajeros();
+            if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
+            {
+                lblMsg.Text = "Debe indicar una cantidad de pasajeros válida.";
+                return;
+            }
+
             string origen = txtOrigen.Text.Trim();
             string destino = txtDestino.Text.Trim();
 
             // Si no se cargan filtros, Search devuelve todos los vuelos activos.
             var listaIda = _vBLL.Search(origen, destino, fechaIda, "Activos");
+            listaIda = listaIda.FindAll(v => v.CuposDisponibles >= cantidadPasajeros.Value);
             gvVuelos.DataSource = listaIda;
             gvVuelos.DataBind();
 
             if (listaIda.Count == 0)
-                lblMsg.Text = "No se encontraron vuelos para la b�squeda seleccionada.";
+                lblMsg.Text = "No se encontraron vuelos para la búsqueda seleccionada.";
 
             // Si el usuario selecciona Ida y vuelta, buscar el tramo inverso.
             // La vuelta debe ser posterior a la fecha de ida cuando hay fecha de ida.
@@ -70,6 +99,7 @@ namespace ReservaVuelos
                     "Activos",
                     fechaIda
                 );
+                listaVuelta = listaVuelta.FindAll(v => v.CuposDisponibles >= cantidadPasajeros.Value);
 
                 gvVuelosReturn.Visible = true;
                 lblVueltaTitle.Visible = true;
@@ -92,55 +122,25 @@ namespace ReservaVuelos
         {
             if (e.CommandName == "Reservar")
             {
-                // CommandArgument contiene IdVuelo (ver TemplateField en la .aspx).
                 int id = Convert.ToInt32(e.CommandArgument);
                 var user = SesionService.GetUser();
                 if (user == null)
                 {
-                    // Debe loguearse.
                     Session["ReturnUrl"] = "BuscarVuelos.aspx";
                     Response.Redirect("Login.aspx");
                     return;
                 }
 
-                // Verificar si ya existe reserva activa para este usuario y vuelo.
-                if (_rBLL.ExistsActiveReservation(user.IdUsuario, id))
+                var cantidadPasajeros = ObtenerCantidadPasajeros();
+                if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = "Ya tiene una reserva activa para este vuelo.";
+                    lblMsg.Text = "Debe indicar una cantidad de pasajeros válida.";
                     return;
                 }
 
-                var r = new Reserva
-                {
-                    IdUsuario = user.IdUsuario,
-                    IdVuelo = id,
-                    FechaReserva = DateTime.Now,
-                    Estado = "Activa"
-                };
-
-                try
-                {
-                    var idReserva = _rBLL.Create(r);
-                    _bBLL.Create(new ReservaVuelos.BE.Bitacora
-                    {
-                        Fecha = DateTime.Now,
-                        Usuario = user.Email,
-                        Accion = $"Reserva creada. IdReserva: {idReserva} - IdVuelo: {id}",
-                        Criticidad = "Info",
-                        Pantalla = "BuscarVuelos"
-                    });
-
-                    // Actualizar resultados para reflejar cupos y mantener mensaje de �xito.
-                    btnBuscar_Click(null, null);
-                    lblMsg.ForeColor = System.Drawing.Color.Green;
-                    lblMsg.Text = "Reserva creada correctamente.";
-                }
-                catch (Exception ex)
-                {
-                    lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = "Error: " + ex.Message;
-                }
+                Response.Redirect($"DetalleReserva.aspx?IdVuelo={id}&CantidadPasajeros={cantidadPasajeros.Value}");
+                return;
             }
             else if (e.CommandName == "VerVueltas")
             {
@@ -156,11 +156,19 @@ namespace ReservaVuelos
 
                 DateTime? fechaVuelta = ObtenerFechaOpcional(txtFechaVuelta.Text);
 
-                // Si el usuario carg� fecha de vuelta, debe ser posterior a la fecha del vuelo de ida seleccionado.
+                // Si el usuario cargó fecha de vuelta, debe ser posterior a la fecha del vuelo de ida seleccionado.
                 if (fechaVuelta.HasValue && fechaVuelta.Value.Date <= vueloIda.FechaSalida.Date)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
                     lblMsg.Text = "La fecha de vuelta debe ser posterior a la fecha de ida seleccionada.";
+                    return;
+                }
+
+                var cantidadPasajeros = ObtenerCantidadPasajeros();
+                if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
+                {
+                    lblMsg.ForeColor = System.Drawing.Color.Red;
+                    lblMsg.Text = "Debe indicar una cantidad de pasajeros válida.";
                     return;
                 }
 
@@ -171,6 +179,7 @@ namespace ReservaVuelos
                     "Activos",
                     vueloIda.FechaSalida.Date
                 );
+                vuelosVuelta = vuelosVuelta.FindAll(v => v.CuposDisponibles >= cantidadPasajeros.Value);
 
                 gvVuelosReturn.Visible = true;
                 lblVueltaTitle.Visible = true;
@@ -186,3 +195,4 @@ namespace ReservaVuelos
 
     }
 }
+

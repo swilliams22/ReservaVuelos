@@ -12,5 +12,6 @@ namespace ReservaVuelos.BE
         public string Rol { get; set; }
         public bool Activo { get; set; }
         public DateTime FechaAlta { get; set; }
+        public int DVH { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+ï»¿using ReservaVuelos.BE;
 using ReservaVuelos.Servicios;
 using System;
 
@@ -8,7 +8,7 @@ namespace ReservaVuelos
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Mostrar mensaje si viene por query string (p. ej. después de registro)
+            // Mostrar mensaje si viene por query string (p. ej. despuÃ©s de registro)
             var msg = Request.QueryString["msg"];
             if (!string.IsNullOrEmpty(msg))
             {
@@ -27,12 +27,20 @@ namespace ReservaVuelos
             if (user != null)
             {
                 SesionService.SetUser(user);
+                var integrity = new IntegrityService();
+                integrity.ValidateAllAndPersist();
+                if (integrity.IsContingencyMode())
+                {
+                    Response.Redirect(user.Rol == "Administrador" ? "GestionIntegridad.aspx" : "Mantenimiento.aspx");
+                    return;
+                }
                 Response.Redirect("Default.aspx");
             }
             else
             {
-                lblMsg.Text = "Usuario o contraseña incorrectos.";
+                lblMsg.Text = "Usuario o contraseÃ±a incorrectos.";
             }
         }
     }
 }
+

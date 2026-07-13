@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.1\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -101,10 +101,14 @@
   <ItemGroup>
     <Content Include="About.aspx" />
     <Content Include="AdminVuelos.aspx" />
+    <Content Include="Backup.aspx" />
     <Content Include="Bitacora.aspx" />
     <Content Include="BuscarVuelos.aspx" />
     <Content Include="Contact.aspx" />
+    <Content Include="DetalleReserva.aspx" />
     <Content Include="EnConstruccion.aspx" />
+    <Content Include="GestionIntegridad.aspx" />
+    <Content Include="Mantenimiento.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
     <Content Include="Content\bootstrap-grid.min.css" />
     <Content Include="Content\bootstrap-grid.rtl.css" />
@@ -190,6 +194,7 @@
     <Content Include="Web.config" />
     <Content Include="Bundle.config" />
     <Content Include="Site.Mobile.Master" />
+    <Content Include="MisDatos.aspx" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdminVuelos.aspx.cs">
@@ -207,6 +212,44 @@
     <Compile Include="About.aspx.designer.cs">
       <DependentUpon>About.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Backup.aspx.cs">
+      <DependentUpon>Backup.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Backup.aspx.designer.cs">
+      <DependentUpon>Backup.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="BE\Cliente.cs" />
+    <Compile Include="BE\ConfiguracionSistema.cs" />
+    <Compile Include="BE\IntegridadError.cs" />
+    <Compile Include="BE\IntegrityValidationResult.cs" />
+    <Compile Include="BE\Pasajero.cs" />
+    <Compile Include="BE\ReservaCabecera.cs" />
+    <Compile Include="BE\ReservaDetalle.cs" />
+    <Compile Include="BE\ReservaPasajero.cs" />
+    <Compile Include="BLL\ClienteBLL.cs" />
+    <Compile Include="BLL\PasajeroBLL.cs" />
+    <Compile Include="BLL\ReservaCabeceraV2BLL.cs" />
+    <Compile Include="DAL\ClienteDAL.cs" />
+    <Compile Include="DAL\PasajeroDAL.cs" />
+    <Compile Include="DAL\ReservaCabeceraDAL.cs" />
+    <Compile Include="DAL\ReservaDetalleDAL.cs" />
+    <Compile Include="DAL\ReservaPasajeroDAL.cs" />
+    <Compile Include="DAL\VueloDAL.cs" />
+    <Compile Include="DetalleReserva.aspx.cs">
+      <DependentUpon>DetalleReserva.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="DetalleReserva.aspx.designer.cs">
+      <DependentUpon>DetalleReserva.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="GestionIntegridad.aspx.cs">
+      <DependentUpon>GestionIntegridad.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="GestionIntegridad.aspx.designer.cs">
+      <DependentUpon>GestionIntegridad.aspx</DependentUpon>
+    </Compile>
     <Compile Include="EnConstruccion.aspx.cs">
       <DependentUpon>EnConstruccion.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -216,7 +259,6 @@
     </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="BE\Bitacora.cs" />
-    <Compile Include="BE\Reserva.cs" />
     <Compile Include="BE\Usuario.cs" />
     <Compile Include="BE\Vuelo.cs" />
     <Compile Include="Bitacora.aspx.cs">
@@ -227,7 +269,6 @@
       <DependentUpon>Bitacora.aspx</DependentUpon>
     </Compile>
     <Compile Include="BLL\BitacoraBLL.cs" />
-    <Compile Include="BLL\ReservaBLL.cs" />
     <Compile Include="BLL\UsuarioBLL.cs" />
     <Compile Include="BLL\VueloBLL.cs" />
     <Compile Include="BuscarVuelos.aspx.cs">
@@ -246,9 +287,7 @@
     </Compile>
     <Compile Include="DAL\BitacoraDAL.cs" />
     <Compile Include="DAL\ConexionDAL.cs" />
-    <Compile Include="DAL\ReservaDAL.cs" />
     <Compile Include="DAL\UsuarioDAL.cs" />
-    <Compile Include="DAL\VueloDAL.cs" />
     <Compile Include="Default.aspx.cs">
       <DependentUpon>Default.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -265,6 +304,13 @@
     </Compile>
     <Compile Include="Login.aspx.designer.cs">
       <DependentUpon>Login.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Mantenimiento.aspx.cs">
+      <DependentUpon>Mantenimiento.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Mantenimiento.aspx.designer.cs">
+      <DependentUpon>Mantenimiento.aspx</DependentUpon>
     </Compile>
     <Compile Include="Logout.aspx.cs">
       <DependentUpon>Logout.aspx</DependentUpon>
@@ -288,7 +334,9 @@
     <Compile Include="Registro.aspx.designer.cs">
       <DependentUpon>Registro.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Servicios\EncryptionService.cs" />
     <Compile Include="Servicios\HashService.cs" />
+    <Compile Include="Servicios\IntegrityService.cs" />
     <Compile Include="Servicios\PasswordPolicyService.cs" />
     <Compile Include="Servicios\SeguridadService.cs" />
     <Compile Include="Servicios\SesionService.cs" />
@@ -312,6 +360,13 @@
     </Compile>
     <Compile Include="ViewSwitcher.ascx.designer.cs">
       <DependentUpon>ViewSwitcher.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="MisDatos.aspx.cs">
+      <DependentUpon>MisDatos.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="MisDatos.aspx.designer.cs">
+      <DependentUpon>MisDatos.aspx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

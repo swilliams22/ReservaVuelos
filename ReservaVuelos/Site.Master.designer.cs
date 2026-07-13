@@ -36,7 +36,10 @@ namespace ReservaVuelos
         /// Controles del menú (visibilidad controlada en code-behind)
         /// </summary>
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuMisReservas;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuMisDatos;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuAdmin;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuIntegridad;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuBackup;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuBitacora;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuLogin;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuRegistro;

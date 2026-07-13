@@ -34,7 +34,8 @@ namespace ReservaVuelos
             if (DateTime.TryParse(txtDesde.Text, out d)) desde = d;
             if (DateTime.TryParse(txtHasta.Text, out d)) hasta = d;
             var usuario = txtUsuarioFiltro.Text.Trim();
-            var criticidad = ddlCriticidad.SelectedValue;
+            int criticidadParsed;
+            int? criticidad = int.TryParse(ddlCriticidad.SelectedValue, out criticidadParsed) ? (int?)criticidadParsed : null;
             var pantalla = txtPantallaFiltro.Text.Trim();
             var lista = _bBLL.GetByFilters(desde, hasta, usuario, criticidad, pantalla);
             gvBitacora.DataSource = lista;

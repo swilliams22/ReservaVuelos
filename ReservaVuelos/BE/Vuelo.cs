@@ -12,5 +12,13 @@ namespace ReservaVuelos.BE
         public decimal Precio { get; set; }
         public int CuposDisponibles { get; set; }
         public bool Activo { get; set; }
+        public DateTime FechaCreacion { get; set; }
+        public DateTime? FechaActualizacion { get; set; }
+        public int DVH { get; set; }
+
+        public DateTime FechaHoraSalida
+        {
+            get { return FechaSalida.Date.Add(HoraSalida); }
+        }
     }
 }

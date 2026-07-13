@@ -50,7 +50,10 @@
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item"><a class="nav-link" runat="server" href="~/BuscarVuelos.aspx">Buscar vuelos</a></li>
                         <li class="nav-item" id="menuMisReservas" runat="server"><a class="nav-link" runat="server" href="~/MisReservas.aspx">Mis reservas</a></li>
+                        <li class="nav-item" id="menuMisDatos" runat="server"><a class="nav-link" runat="server" href="~/MisDatos.aspx">Mis datos</a></li>
                         <li class="nav-item" id="menuAdmin" runat="server"><a class="nav-link" runat="server" href="~/AdminVuelos.aspx">Administración</a></li>
+                        <li class="nav-item" id="menuIntegridad" runat="server"><a class="nav-link" runat="server" href="~/GestionIntegridad.aspx">Integridad</a></li>
+                        <li class="nav-item" id="menuBackup" runat="server"><a class="nav-link" runat="server" href="~/Backup.aspx">Backups</a></li>
                         <li class="nav-item" id="menuBitacora" runat="server"><a class="nav-link" runat="server" href="~/Bitacora.aspx">Bitácora</a></li>
                     </ul>
                     <ul class="navbar-nav">
