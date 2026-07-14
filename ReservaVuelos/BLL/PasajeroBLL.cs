@@ -1,5 +1,6 @@
 using ReservaVuelos.BE;
 using ReservaVuelos.DAL;
+using ReservaVuelos.Servicios;
 using System;
 
 namespace ReservaVuelos.BLL
@@ -11,6 +12,7 @@ namespace ReservaVuelos.BLL
         public int Create(Pasajero p)
         {
             ValidarPasajero(p);
+            new IntegrityService().EnsureAllTablesAreValid();
             p.FechaAlta = DateTime.Now;
             return _dal.Create(p);
         }
@@ -21,6 +23,7 @@ namespace ReservaVuelos.BLL
                 throw new ArgumentException("El pasajero es inválido.");
 
             ValidarPasajero(p);
+            new IntegrityService().EnsureAllTablesAreValid();
             p.FechaActualizacion = DateTime.Now;
             return _dal.Update(p) > 0;
         }
@@ -65,6 +68,7 @@ namespace ReservaVuelos.BLL
 
         public bool VincularConUsuario(int idPasajero, int idUsuario)
         {
+            new IntegrityService().EnsureAllTablesAreValid();
             return _dal.VincularConUsuario(idPasajero, idUsuario) > 0;
         }
 

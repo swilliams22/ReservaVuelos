@@ -1,4 +1,5 @@
 using ReservaVuelos.BE;
+using ReservaVuelos.Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -10,15 +11,33 @@ namespace ReservaVuelos.DAL
         public int Create(ReservaVuelos.BE.Bitacora b)
         {
             using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"INSERT INTO Bitacora (Fecha,Usuario,Accion,Criticidad,Pantalla) VALUES (@Fecha,@Usuario,@Accion,@Criticidad,@Pantalla); SELECT SCOPE_IDENTITY();", cn))
             {
-                cmd.Parameters.AddWithValue("@Fecha", b.Fecha);
-                cmd.Parameters.AddWithValue("@Usuario", b.Usuario ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Accion", b.Accion ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Criticidad", b.Criticidad);
-                cmd.Parameters.AddWithValue("@Pantalla", b.Pantalla ?? string.Empty);
                 cn.Open();
-                return Convert.ToInt32(cmd.ExecuteScalar());
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        int id;
+                        using (var cmd = new SqlCommand(@"INSERT INTO Bitacora (Fecha,Usuario,Accion,Criticidad,Pantalla,DVH) VALUES (@Fecha,@Usuario,@Accion,@Criticidad,@Pantalla,0); SELECT SCOPE_IDENTITY();", cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@Fecha", b.Fecha);
+                            cmd.Parameters.AddWithValue("@Usuario", b.Usuario ?? string.Empty);
+                            cmd.Parameters.AddWithValue("@Accion", b.Accion ?? string.Empty);
+                            cmd.Parameters.AddWithValue("@Criticidad", b.Criticidad);
+                            cmd.Parameters.AddWithValue("@Pantalla", b.Pantalla ?? string.Empty);
+                            id = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        new IntegrityService().UpdateRecordAndTableDVV(cn, tran, "Bitacora", id);
+                        tran.Commit();
+                        return id;
+                    }
+                    catch
+                    {
+                        try { tran.Rollback(); } catch { }
+                        throw;
+                    }
+                }
             }
         }
 

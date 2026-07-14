@@ -40,6 +40,7 @@ namespace ReservaVuelos
             }
             catch (Exception ex)
             {
+                if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                 lblMsg.Text = "Error al registrar: " + ex.Message;
             }
         }

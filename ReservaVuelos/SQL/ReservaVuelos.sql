@@ -67,6 +67,7 @@ CREATE TABLE dbo.Pasajeros
     FechaNacimiento DATE NULL,
     FechaAlta DATETIME2(0) NOT NULL CONSTRAINT DF_Pasajeros_FechaAlta DEFAULT (GETDATE()),
     FechaActualizacion DATETIME2(0) NULL,
+    DVH INT NOT NULL CONSTRAINT DF_Pasajeros_DVH DEFAULT (0),
     CONSTRAINT PK_Pasajeros PRIMARY KEY CLUSTERED (IdPasajero),
     CONSTRAINT FK_Pasajeros_Usuarios FOREIGN KEY (IdUsuario) REFERENCES dbo.Usuarios(IdUsuario),
     CONSTRAINT UQ_Pasajeros_Documento UNIQUE (Documento),
@@ -159,6 +160,7 @@ CREATE TABLE dbo.ReservaPasajero
     IdReservaPasajero INT IDENTITY(1,1) NOT NULL,
     IdReservaCabecera INT NOT NULL,
     IdPasajero INT NOT NULL,
+    DVH INT NOT NULL CONSTRAINT DF_ReservaPasajero_DVH DEFAULT (0),
     CONSTRAINT PK_ReservaPasajero PRIMARY KEY CLUSTERED (IdReservaPasajero),
     CONSTRAINT FK_ReservaPasajero_ReservaCabecera FOREIGN KEY (IdReservaCabecera) REFERENCES dbo.ReservaCabecera(IdReservaCabecera),
     CONSTRAINT FK_ReservaPasajero_Pasajeros FOREIGN KEY (IdPasajero) REFERENCES dbo.Pasajeros(IdPasajero),
@@ -174,6 +176,7 @@ CREATE TABLE dbo.Bitacora
     Accion NVARCHAR(500) NOT NULL,
     Criticidad INT NOT NULL,
     Pantalla NVARCHAR(100) NULL,
+    DVH INT NOT NULL CONSTRAINT DF_Bitacora_DVH DEFAULT (0),
     CONSTRAINT PK_Bitacora PRIMARY KEY CLUSTERED (IdBitacora),
     CONSTRAINT CK_Bitacora_Criticidad CHECK (Criticidad BETWEEN 1 AND 4)
 );
@@ -195,6 +198,7 @@ CREATE TABLE dbo.IntegridadError
     IdError INT IDENTITY(1,1) NOT NULL,
     Fecha DATETIME2(0) NOT NULL,
     TipoError NVARCHAR(10) NOT NULL,
+    TipoOperacion NVARCHAR(20) NULL,
     NombreTabla NVARCHAR(100) NOT NULL,
     IdRegistroAfectado NVARCHAR(100) NULL,
     ValorEsperado NVARCHAR(100) NULL,
@@ -206,6 +210,18 @@ CREATE TABLE dbo.IntegridadError
     CONSTRAINT CK_IntegridadError_Tipo CHECK (TipoError IN (N'DVH', N'DVV')),
     CONSTRAINT CK_IntegridadError_Estado CHECK (Estado IN (N'Activo', N'Resuelto')),
     CONSTRAINT FK_IntegridadError_Usuarios FOREIGN KEY (IdUsuarioAdministrador) REFERENCES dbo.Usuarios(IdUsuario)
+);
+GO
+
+CREATE TABLE dbo.IntegridadRegistro
+(
+    IdIntegridadRegistro INT IDENTITY(1,1) NOT NULL,
+    NombreTabla NVARCHAR(100) NOT NULL,
+    IdRegistro NVARCHAR(100) NOT NULL,
+    ValorDVH INT NOT NULL,
+    FechaCalculo DATETIME2(0) NOT NULL,
+    CONSTRAINT PK_IntegridadRegistro PRIMARY KEY CLUSTERED (IdIntegridadRegistro),
+    CONSTRAINT UQ_IntegridadRegistro_TablaRegistro UNIQUE (NombreTabla, IdRegistro)
 );
 GO
 
@@ -229,6 +245,7 @@ CREATE NONCLUSTERED INDEX IX_ReservaDetalle_Vuelo ON dbo.ReservaDetalle(IdVuelo,
 CREATE NONCLUSTERED INDEX IX_ReservaPasajero_Reserva ON dbo.ReservaPasajero(IdReservaCabecera);
 CREATE NONCLUSTERED INDEX IX_Bitacora_Fecha ON dbo.Bitacora(Fecha DESC);
 CREATE NONCLUSTERED INDEX IX_IntegridadError_Estado ON dbo.IntegridadError(Estado, Fecha DESC);
+CREATE NONCLUSTERED INDEX IX_IntegridadRegistro_Tabla ON dbo.IntegridadRegistro(NombreTabla, IdRegistro);
 GO
 
 INSERT INTO dbo.ConfiguracionSistema

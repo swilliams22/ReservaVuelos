@@ -30,7 +30,7 @@ namespace ReservaVuelos.BLL
             if (v.FechaHoraSalida <= DateTime.Now)
                 throw new ArgumentException("No se pueden crear vuelos con fecha y hora pasada.");
 
-            new IntegrityService().EnsureTableIsValid("Vuelos");
+            new IntegrityService().EnsureAllTablesAreValid();
             v.FechaCreacion = DateTime.Now;
             return _dal.Create(v);
         }
@@ -39,9 +39,7 @@ namespace ReservaVuelos.BLL
         public int SoftDelete(int id)
         {
             var integrity = new IntegrityService();
-            integrity.EnsureTableIsValid("Vuelos");
-            integrity.EnsureTableIsValid("ReservaCabecera");
-            integrity.EnsureTableIsValid("ReservaDetalle");
+            integrity.EnsureAllTablesAreValid();
             return _dal.SoftDelete(id);
         }
     }

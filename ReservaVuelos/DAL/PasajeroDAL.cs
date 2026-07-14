@@ -11,20 +11,38 @@ namespace ReservaVuelos.DAL
         public int Create(Pasajero p)
         {
             using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"INSERT INTO Pasajeros (IdUsuario, Nombre, Apellido, Email, Documento, Nacionalidad, FechaNacimiento, FechaAlta, FechaActualizacion)
-VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @FechaNacimiento, @FechaAlta, @FechaActualizacion); SELECT SCOPE_IDENTITY();", cn))
             {
-                cmd.Parameters.AddWithValue("@IdUsuario", p.IdUsuario.HasValue ? (object)p.IdUsuario.Value : DBNull.Value);
-                cmd.Parameters.AddWithValue("@Nombre", p.Nombre ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Apellido", string.IsNullOrWhiteSpace(p.Apellido) ? (object)DBNull.Value : p.Apellido.Trim());
-                cmd.Parameters.AddWithValue("@Email", string.IsNullOrWhiteSpace(p.Email) ? (object)DBNull.Value : p.Email.Trim());
-                cmd.Parameters.AddWithValue("@Documento", p.Documento ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Nacionalidad", EncryptOrDbNull(p.Nacionalidad));
-                cmd.Parameters.AddWithValue("@FechaNacimiento", p.FechaNacimiento.HasValue ? (object)p.FechaNacimiento.Value : DBNull.Value);
-                cmd.Parameters.AddWithValue("@FechaAlta", p.FechaAlta);
-                cmd.Parameters.AddWithValue("@FechaActualizacion", p.FechaActualizacion.HasValue ? (object)p.FechaActualizacion.Value : DBNull.Value);
                 cn.Open();
-                return Convert.ToInt32(cmd.ExecuteScalar());
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        int id;
+                        using (var cmd = new SqlCommand(@"INSERT INTO Pasajeros (IdUsuario, Nombre, Apellido, Email, Documento, Nacionalidad, FechaNacimiento, FechaAlta, FechaActualizacion, DVH)
+VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @FechaNacimiento, @FechaAlta, @FechaActualizacion, 0); SELECT SCOPE_IDENTITY();", cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@IdUsuario", p.IdUsuario.HasValue ? (object)p.IdUsuario.Value : DBNull.Value);
+                            cmd.Parameters.AddWithValue("@Nombre", p.Nombre ?? string.Empty);
+                            cmd.Parameters.AddWithValue("@Apellido", string.IsNullOrWhiteSpace(p.Apellido) ? (object)DBNull.Value : p.Apellido.Trim());
+                            cmd.Parameters.AddWithValue("@Email", string.IsNullOrWhiteSpace(p.Email) ? (object)DBNull.Value : p.Email.Trim());
+                            cmd.Parameters.AddWithValue("@Documento", p.Documento ?? string.Empty);
+                            cmd.Parameters.AddWithValue("@Nacionalidad", EncryptOrDbNull(p.Nacionalidad));
+                            cmd.Parameters.AddWithValue("@FechaNacimiento", p.FechaNacimiento.HasValue ? (object)p.FechaNacimiento.Value : DBNull.Value);
+                            cmd.Parameters.AddWithValue("@FechaAlta", p.FechaAlta);
+                            cmd.Parameters.AddWithValue("@FechaActualizacion", p.FechaActualizacion.HasValue ? (object)p.FechaActualizacion.Value : DBNull.Value);
+                            id = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        new IntegrityService().UpdateRecordAndTableDVV(cn, tran, "Pasajeros", id);
+                        tran.Commit();
+                        return id;
+                    }
+                    catch
+                    {
+                        try { tran.Rollback(); } catch { }
+                        throw;
+                    }
+                }
             }
         }
 
@@ -110,7 +128,14 @@ VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @Fech
         public int Update(Pasajero p)
         {
             using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"UPDATE Pasajeros
+            {
+                cn.Open();
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        int rows;
+                        using (var cmd = new SqlCommand(@"UPDATE Pasajeros
 SET Nombre = @Nombre,
     Apellido = @Apellido,
     Email = @Email,
@@ -118,35 +143,64 @@ SET Nombre = @Nombre,
     Nacionalidad = @Nacionalidad,
     FechaNacimiento = @FechaNacimiento,
     FechaActualizacion = @FechaActualizacion
-WHERE IdPasajero = @IdPasajero", cn))
-            {
-                cmd.Parameters.AddWithValue("@IdPasajero", p.IdPasajero);
-                cmd.Parameters.AddWithValue("@Nombre", p.Nombre ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Apellido", string.IsNullOrWhiteSpace(p.Apellido) ? (object)DBNull.Value : p.Apellido.Trim());
-                cmd.Parameters.AddWithValue("@Email", string.IsNullOrWhiteSpace(p.Email) ? (object)DBNull.Value : p.Email.Trim());
-                cmd.Parameters.AddWithValue("@Documento", p.Documento ?? string.Empty);
-                cmd.Parameters.AddWithValue("@Nacionalidad", EncryptOrDbNull(p.Nacionalidad));
-                cmd.Parameters.AddWithValue("@FechaNacimiento", p.FechaNacimiento.HasValue ? (object)p.FechaNacimiento.Value : DBNull.Value);
-                cmd.Parameters.AddWithValue("@FechaActualizacion", p.FechaActualizacion.HasValue ? (object)p.FechaActualizacion.Value : DateTime.Now);
-                cn.Open();
-                return cmd.ExecuteNonQuery();
+WHERE IdPasajero = @IdPasajero", cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@IdPasajero", p.IdPasajero);
+                            cmd.Parameters.AddWithValue("@Nombre", p.Nombre ?? string.Empty);
+                            cmd.Parameters.AddWithValue("@Apellido", string.IsNullOrWhiteSpace(p.Apellido) ? (object)DBNull.Value : p.Apellido.Trim());
+                            cmd.Parameters.AddWithValue("@Email", string.IsNullOrWhiteSpace(p.Email) ? (object)DBNull.Value : p.Email.Trim());
+                            cmd.Parameters.AddWithValue("@Documento", p.Documento ?? string.Empty);
+                            cmd.Parameters.AddWithValue("@Nacionalidad", EncryptOrDbNull(p.Nacionalidad));
+                            cmd.Parameters.AddWithValue("@FechaNacimiento", p.FechaNacimiento.HasValue ? (object)p.FechaNacimiento.Value : DBNull.Value);
+                            cmd.Parameters.AddWithValue("@FechaActualizacion", p.FechaActualizacion.HasValue ? (object)p.FechaActualizacion.Value : DateTime.Now);
+                            rows = cmd.ExecuteNonQuery();
+                        }
+
+                        if (rows > 0) new IntegrityService().UpdateRecordAndTableDVV(cn, tran, "Pasajeros", p.IdPasajero);
+                        tran.Commit();
+                        return rows;
+                    }
+                    catch
+                    {
+                        try { tran.Rollback(); } catch { }
+                        throw;
+                    }
+                }
             }
         }
 
         public int VincularConUsuario(int idPasajero, int idUsuario)
         {
             using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"UPDATE Pasajeros
+            {
+                cn.Open();
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        int rows;
+                        using (var cmd = new SqlCommand(@"UPDATE Pasajeros
 SET IdUsuario = @IdUsuario,
     FechaActualizacion = @FechaActualizacion
 WHERE IdPasajero = @IdPasajero
-  AND IdUsuario IS NULL", cn))
-            {
-                cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
-                cmd.Parameters.AddWithValue("@IdPasajero", idPasajero);
-                cmd.Parameters.AddWithValue("@FechaActualizacion", DateTime.Now);
-                cn.Open();
-                return cmd.ExecuteNonQuery();
+  AND IdUsuario IS NULL", cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
+                            cmd.Parameters.AddWithValue("@IdPasajero", idPasajero);
+                            cmd.Parameters.AddWithValue("@FechaActualizacion", DateTime.Now);
+                            rows = cmd.ExecuteNonQuery();
+                        }
+
+                        if (rows > 0) new IntegrityService().UpdateRecordAndTableDVV(cn, tran, "Pasajeros", idPasajero);
+                        tran.Commit();
+                        return rows;
+                    }
+                    catch
+                    {
+                        try { tran.Rollback(); } catch { }
+                        throw;
+                    }
+                }
             }
         }
 

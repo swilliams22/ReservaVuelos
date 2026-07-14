@@ -22,7 +22,7 @@ namespace ReservaVuelos.BLL
         public int Create(Cliente c)
         {
             ValidarCliente(c);
-            new IntegrityService().EnsureTableIsValid("Clientes");
+            new IntegrityService().EnsureAllTablesAreValid();
             c.FechaAlta = DateTime.Now;
             return _dal.Create(c);
         }
@@ -33,7 +33,7 @@ namespace ReservaVuelos.BLL
                 throw new ArgumentException("El cliente es inválido.");
 
             ValidarCliente(c);
-            new IntegrityService().EnsureTableIsValid("Clientes");
+            new IntegrityService().EnsureAllTablesAreValid();
             c.FechaActualizacion = DateTime.Now;
             return _dal.Update(c) > 0;
         }

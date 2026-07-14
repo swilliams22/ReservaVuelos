@@ -12,13 +12,31 @@ namespace ReservaVuelos.DAL
         public int Create(ReservaPasajero rp)
         {
             using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero)
-VALUES (@IdReservaCabecera, @IdPasajero); SELECT SCOPE_IDENTITY();", cn))
             {
-                cmd.Parameters.AddWithValue("@IdReservaCabecera", rp.IdReservaCabecera);
-                cmd.Parameters.AddWithValue("@IdPasajero", rp.IdPasajero);
                 cn.Open();
-                return Convert.ToInt32(cmd.ExecuteScalar());
+                using (var tran = cn.BeginTransaction())
+                {
+                    try
+                    {
+                        int id;
+                        using (var cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero, DVH)
+VALUES (@IdReservaCabecera, @IdPasajero, 0); SELECT SCOPE_IDENTITY();", cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@IdReservaCabecera", rp.IdReservaCabecera);
+                            cmd.Parameters.AddWithValue("@IdPasajero", rp.IdPasajero);
+                            id = Convert.ToInt32(cmd.ExecuteScalar());
+                        }
+
+                        new IntegrityService().UpdateRecordAndTableDVV(cn, tran, "ReservaPasajero", id);
+                        tran.Commit();
+                        return id;
+                    }
+                    catch
+                    {
+                        try { tran.Rollback(); } catch { }
+                        throw;
+                    }
+                }
             }
         }
 

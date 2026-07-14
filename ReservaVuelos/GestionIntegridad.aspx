@@ -22,15 +22,10 @@
 
     <asp:GridView ID="gvErrores" runat="server" CssClass="grid" AutoGenerateColumns="false">
         <Columns>
-            <asp:BoundField DataField="Fecha" HeaderText="Fecha" DataFormatString="{0:yyyy-MM-dd HH:mm:ss}" />
-            <asp:BoundField DataField="TipoError" HeaderText="Tipo" />
+            <asp:BoundField DataField="TipoOperacion" HeaderText="Operacion" />
+            <asp:BoundField DataField="TipoError" HeaderText="Falla" />
             <asp:BoundField DataField="NombreTabla" HeaderText="Tabla" />
             <asp:BoundField DataField="IdRegistroAfectado" HeaderText="Registro" />
-            <asp:BoundField DataField="ValorEsperado" HeaderText="Valor esperado" />
-            <asp:BoundField DataField="ValorCalculado" HeaderText="Valor calculado" />
-            <asp:BoundField DataField="Estado" HeaderText="Estado" />
-            <asp:BoundField DataField="IdUsuarioAdministrador" HeaderText="Admin" />
-            <asp:BoundField DataField="AccionTomada" HeaderText="Acción tomada" />
         </Columns>
     </asp:GridView>
 </asp:Content>

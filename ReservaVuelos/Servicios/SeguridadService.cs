@@ -34,7 +34,6 @@ namespace ReservaVuelos.Servicios
 
                 // Vincular pasajero si existe
                 VincularPasajeroConUsuario(u);
-                new IntegrityService().ValidateTable("Usuarios");
 
                 return u;
             }
@@ -48,6 +47,8 @@ namespace ReservaVuelos.Servicios
 
         public int RegistrarUsuario(Usuario u, string password)
         {
+            new IntegrityService().EnsureAllTablesAreValid();
+
             string hash, salt;
             HashService.CreateHash(password, out hash, out salt);
             u.PasswordHash = hash;

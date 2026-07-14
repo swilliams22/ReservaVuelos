@@ -27,10 +27,7 @@ namespace ReservaVuelos.BLL
                 throw new ArgumentException("El usuario actual es requerido.");
 
             var integrity = new IntegrityService();
-            integrity.EnsureTableIsValid("Clientes");
-            integrity.EnsureTableIsValid("Vuelos");
-            integrity.EnsureTableIsValid("ReservaCabecera");
-            integrity.EnsureTableIsValid("ReservaDetalle");
+            integrity.EnsureAllTablesAreValid();
 
             foreach (var detalle in detalles)
             {
@@ -118,9 +115,7 @@ namespace ReservaVuelos.BLL
             try
             {
                 var integrity = new IntegrityService();
-                integrity.EnsureTableIsValid("Vuelos");
-                integrity.EnsureTableIsValid("ReservaCabecera");
-                integrity.EnsureTableIsValid("ReservaDetalle");
+                integrity.EnsureAllTablesAreValid();
 
                 var rows = _dal.Cancel(idReservaCabecera, usuarioActual != null ? (int?)usuarioActual.IdUsuario : null);
                 if (rows > 0)

@@ -62,7 +62,7 @@ namespace ReservaVuelos
             lblUltimaValidacion.Text = cfg.FechaUltimaValidacion.HasValue ? cfg.FechaUltimaValidacion.Value.ToString("yyyy-MM-dd HH:mm:ss") : "-";
             lblMotivo.Text = string.IsNullOrWhiteSpace(cfg.MotivoContingencia) ? "-" : cfg.MotivoContingencia;
 
-            gvErrores.DataSource = _integrity.GetErrors(false);
+            gvErrores.DataSource = _integrity.GetErrors(cfg.ModoContingencia);
             gvErrores.DataBind();
         }
     }

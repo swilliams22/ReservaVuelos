@@ -7,6 +7,7 @@ namespace ReservaVuelos.BE
         public int IdError { get; set; }
         public DateTime Fecha { get; set; }
         public string TipoError { get; set; }
+        public string TipoOperacion { get; set; }
         public string NombreTabla { get; set; }
         public string IdRegistroAfectado { get; set; }
         public string ValorEsperado { get; set; }

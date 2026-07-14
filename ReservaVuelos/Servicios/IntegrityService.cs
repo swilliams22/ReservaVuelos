@@ -19,9 +19,12 @@ namespace ReservaVuelos.Servicios
         {
             "Usuarios",
             "Clientes",
+            "Pasajeros",
             "Vuelos",
             "ReservaCabecera",
-            "ReservaDetalle"
+            "ReservaDetalle",
+            "ReservaPasajero",
+            "Bitacora"
         };
 
         private static readonly int[] Primes =
@@ -124,7 +127,7 @@ namespace ReservaVuelos.Servicios
                 try
                 {
                     EnsureInfrastructure();
-                    if (!HasAnyDVV())
+                    if (!HasAnyDVV() || !HasAnySnapshot())
                     {
                         RecalculateAll(null, "Inicializacion controlada de integridad");
                     }
@@ -226,6 +229,13 @@ namespace ReservaVuelos.Servicios
                 SetContingency(true, "Se detectaron inconsistencias de integridad en " + tableName + ".");
                 throw new InvalidOperationException("La aplicacion se encuentra temporalmente en mantenimiento debido a una verificacion de integridad.");
             }
+        }
+
+        public void EnsureAllTablesAreValid()
+        {
+            var result = ValidateAllAndPersist();
+            if (!result.IsValid)
+                throw new InvalidOperationException("La aplicacion se encuentra temporalmente en mantenimiento debido a una verificacion de integridad.");
         }
 
         public IntegrityValidationResult ValidateAll()
@@ -352,6 +362,24 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
                 cmd.Parameters.AddWithValue("@Id", id);
                 cmd.ExecuteNonQuery();
             }
+
+            UpdateRecordSnapshot(cn, tran, tableName, id, dvh);
+        }
+
+        private void UpdateRecordSnapshot(SqlConnection cn, SqlTransaction tran, string tableName, int id, int dvh)
+        {
+            using (var cmd = new SqlCommand(@"MERGE IntegridadRegistro AS target
+USING (SELECT @NombreTabla AS NombreTabla, @IdRegistro AS IdRegistro) AS source
+ON target.NombreTabla = source.NombreTabla AND target.IdRegistro = source.IdRegistro
+WHEN MATCHED THEN UPDATE SET ValorDVH = @ValorDVH, FechaCalculo = @FechaCalculo
+WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) VALUES (@NombreTabla, @IdRegistro, @ValorDVH, @FechaCalculo);", cn, tran))
+            {
+                cmd.Parameters.AddWithValue("@NombreTabla", tableName);
+                cmd.Parameters.AddWithValue("@IdRegistro", id.ToString(CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("@ValorDVH", dvh);
+                cmd.Parameters.AddWithValue("@FechaCalculo", DateTime.Now);
+                cmd.ExecuteNonQuery();
+            }
         }
 
         public void EnsureInfrastructure()
@@ -412,6 +440,7 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
         private void ValidateTable(SqlConnection cn, SqlTransaction tran, string tableName, IntegrityValidationResult result)
         {
             string pk = GetPk(tableName);
+            var actualRows = new Dictionary<string, Tuple<int, int>>();
             using (var cmd = new SqlCommand("SELECT * FROM " + tableName, cn, tran))
             using (var rdr = cmd.ExecuteReader())
             {
@@ -420,19 +449,35 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
                     int id = Convert.ToInt32(rdr[pk]);
                     int stored = rdr["DVH"] != DBNull.Value ? Convert.ToInt32(rdr["DVH"]) : -1;
                     int calculated = CalculateDVHFromReader(tableName, rdr);
-                    if (stored != calculated)
-                    {
-                        result.Errors.Add(new IntegridadError
-                        {
-                            Fecha = DateTime.Now,
-                            TipoError = "DVH",
-                            NombreTabla = tableName,
-                            IdRegistroAfectado = id.ToString(CultureInfo.InvariantCulture),
-                            ValorEsperado = stored.ToString(CultureInfo.InvariantCulture),
-                            ValorCalculado = calculated.ToString(CultureInfo.InvariantCulture),
-                            Estado = "Activo"
-                        });
-                    }
+                    actualRows[id.ToString(CultureInfo.InvariantCulture)] = Tuple.Create(stored, calculated);
+                }
+            }
+
+            var expectedRows = GetExpectedRows(cn, tran, tableName);
+            bool hasRecordErrors = false;
+            foreach (var actual in actualRows)
+            {
+                int expectedDvh;
+                var stored = actual.Value.Item1;
+                var calculated = actual.Value.Item2;
+                if (!expectedRows.TryGetValue(actual.Key, out expectedDvh))
+                {
+                    hasRecordErrors = true;
+                    AddIntegrityError(result, tableName, actual.Key, "INSERT", string.Empty, calculated.ToString(CultureInfo.InvariantCulture));
+                }
+                else if (expectedDvh != calculated || stored != calculated)
+                {
+                    hasRecordErrors = true;
+                    AddIntegrityError(result, tableName, actual.Key, "UPDATE", expectedDvh.ToString(CultureInfo.InvariantCulture), calculated.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
+            foreach (var expected in expectedRows)
+            {
+                if (!actualRows.ContainsKey(expected.Key))
+                {
+                    hasRecordErrors = true;
+                    AddIntegrityError(result, tableName, expected.Key, "DELETE", expected.Value.ToString(CultureInfo.InvariantCulture), string.Empty);
                 }
             }
 
@@ -450,12 +495,13 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
                 calculatedDvv = Convert.ToInt64(cmd.ExecuteScalar());
             }
 
-            if (storedDvv != calculatedDvv)
+            if (storedDvv != calculatedDvv && !hasRecordErrors)
             {
                 result.Errors.Add(new IntegridadError
                 {
                     Fecha = DateTime.Now,
                     TipoError = "DVV",
+                    TipoOperacion = "UPDATE",
                     NombreTabla = tableName,
                     IdRegistroAfectado = null,
                     ValorEsperado = storedDvv == long.MinValue ? string.Empty : storedDvv.ToString(CultureInfo.InvariantCulture),
@@ -463,6 +509,41 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
                     Estado = "Activo"
                 });
             }
+        }
+
+        private Dictionary<string, int> GetExpectedRows(SqlConnection cn, SqlTransaction tran, string tableName)
+        {
+            var rows = new Dictionary<string, int>();
+            using (var cmd = new SqlCommand(@"SELECT IdRegistro, ValorDVH
+FROM IntegridadRegistro
+WHERE NombreTabla = @NombreTabla", cn, tran))
+            {
+                cmd.Parameters.AddWithValue("@NombreTabla", tableName);
+                using (var rdr = cmd.ExecuteReader())
+                {
+                    while (rdr.Read())
+                    {
+                        rows[rdr["IdRegistro"].ToString()] = Convert.ToInt32(rdr["ValorDVH"]);
+                    }
+                }
+            }
+
+            return rows;
+        }
+
+        private void AddIntegrityError(IntegrityValidationResult result, string tableName, string idRegistro, string tipoOperacion, string valorEsperado, string valorCalculado)
+        {
+            result.Errors.Add(new IntegridadError
+            {
+                Fecha = DateTime.Now,
+                TipoError = "DVH",
+                TipoOperacion = tipoOperacion,
+                NombreTabla = tableName,
+                IdRegistroAfectado = idRegistro,
+                ValorEsperado = valorEsperado,
+                ValorCalculado = valorCalculado,
+                Estado = "Activo"
+            });
         }
 
         private void RecalculateTable(SqlConnection cn, SqlTransaction tran, string tableName)
@@ -480,6 +561,13 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
             }
 
             UpdateTableDVV(cn, tran, tableName);
+            using (var cmd = new SqlCommand(@"DELETE FROM IntegridadRegistro
+WHERE NombreTabla = @NombreTabla
+  AND IdRegistro NOT IN (SELECT CONVERT(NVARCHAR(100), " + GetPk(tableName) + @") FROM " + tableName + @")", cn, tran))
+            {
+                cmd.Parameters.AddWithValue("@NombreTabla", tableName);
+                cmd.ExecuteNonQuery();
+            }
         }
 
         private int CalculateStoredRowDVH(SqlConnection cn, SqlTransaction tran, string tableName, int id)
@@ -503,12 +591,18 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
                     return CalculateDVH(JoinFields(rdr["IdUsuario"], rdr["Nombre"], rdr["Email"], rdr["Rol"], rdr["Activo"], rdr["FechaAlta"]));
                 case "Clientes":
                     return CalculateDVH(JoinFields(rdr["IdCliente"], rdr["IdUsuario"], rdr["Nombre"], rdr["Email"], rdr["Documento"], rdr["Telefono"], rdr["Direccion"], rdr["FechaAlta"], rdr["FechaActualizacion"]));
+                case "Pasajeros":
+                    return CalculateDVH(JoinFields(rdr["IdPasajero"], rdr["IdUsuario"], rdr["Nombre"], rdr["Apellido"], rdr["Email"], rdr["Documento"], rdr["Nacionalidad"], rdr["FechaNacimiento"], rdr["FechaAlta"], rdr["FechaActualizacion"]));
                 case "Vuelos":
                     return CalculateDVH(JoinFields(rdr["IdVuelo"], rdr["Origen"], rdr["Destino"], rdr["FechaSalida"], rdr["HoraSalida"], rdr["Precio"], rdr["CuposDisponibles"], rdr["Activo"], rdr["FechaCreacion"], rdr["FechaActualizacion"]));
                 case "ReservaCabecera":
                     return CalculateDVH(JoinFields(rdr["IdReservaCabecera"], rdr["IdCliente"], rdr["IdUsuarioCreador"], rdr["FechaReserva"], rdr["Estado"], rdr["MontoTotal"], rdr["FechaCreacion"], rdr["FechaActualizacion"], rdr["FechaCancelacion"], rdr["IdUsuarioCancela"]));
                 case "ReservaDetalle":
                     return CalculateDVH(JoinFields(rdr["IdReservaDetalle"], rdr["IdReservaCabecera"], rdr["IdVuelo"], rdr["Cantidad"], rdr["PrecioUnitario"], rdr["SubTotal"], rdr["Estado"]));
+                case "ReservaPasajero":
+                    return CalculateDVH(JoinFields(rdr["IdReservaPasajero"], rdr["IdReservaCabecera"], rdr["IdPasajero"]));
+                case "Bitacora":
+                    return CalculateDVH(JoinFields(rdr["IdBitacora"], rdr["Fecha"], rdr["Usuario"], rdr["Accion"], rdr["Criticidad"], rdr["Pantalla"]));
                 default:
                     throw new ArgumentException("Tabla no protegida: " + tableName);
             }
@@ -524,11 +618,12 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
                     if (ActiveErrorExists(cn, null, error)) continue;
 
                     using (var cmd = new SqlCommand(@"INSERT INTO IntegridadError
-(Fecha, TipoError, NombreTabla, IdRegistroAfectado, ValorEsperado, ValorCalculado, Estado)
-VALUES (@Fecha, @TipoError, @NombreTabla, @IdRegistroAfectado, @ValorEsperado, @ValorCalculado, @Estado)", cn))
+(Fecha, TipoError, TipoOperacion, NombreTabla, IdRegistroAfectado, ValorEsperado, ValorCalculado, Estado)
+VALUES (@Fecha, @TipoError, @TipoOperacion, @NombreTabla, @IdRegistroAfectado, @ValorEsperado, @ValorCalculado, @Estado)", cn))
                     {
                         cmd.Parameters.AddWithValue("@Fecha", DateTime.Now);
                         cmd.Parameters.AddWithValue("@TipoError", error.TipoError);
+                        cmd.Parameters.AddWithValue("@TipoOperacion", string.IsNullOrEmpty(error.TipoOperacion) ? (object)DBNull.Value : error.TipoOperacion);
                         cmd.Parameters.AddWithValue("@NombreTabla", error.NombreTabla);
                         cmd.Parameters.AddWithValue("@IdRegistroAfectado", string.IsNullOrEmpty(error.IdRegistroAfectado) ? (object)DBNull.Value : error.IdRegistroAfectado);
                         cmd.Parameters.AddWithValue("@ValorEsperado", string.IsNullOrEmpty(error.ValorEsperado) ? (object)DBNull.Value : error.ValorEsperado);
@@ -548,11 +643,13 @@ VALUES (@Fecha, @TipoError, @NombreTabla, @IdRegistroAfectado, @ValorEsperado, @
             using (var cmd = new SqlCommand(@"SELECT COUNT(1) FROM IntegridadError
 WHERE Estado = @Estado
   AND TipoError = @TipoError
+  AND ISNULL(TipoOperacion, '') = ISNULL(@TipoOperacion, '')
   AND NombreTabla = @NombreTabla
   AND ISNULL(IdRegistroAfectado, '') = ISNULL(@IdRegistroAfectado, '')", cn, tran))
             {
                 cmd.Parameters.AddWithValue("@Estado", "Activo");
                 cmd.Parameters.AddWithValue("@TipoError", error.TipoError);
+                cmd.Parameters.AddWithValue("@TipoOperacion", string.IsNullOrEmpty(error.TipoOperacion) ? (object)DBNull.Value : error.TipoOperacion);
                 cmd.Parameters.AddWithValue("@NombreTabla", error.NombreTabla);
                 cmd.Parameters.AddWithValue("@IdRegistroAfectado", string.IsNullOrEmpty(error.IdRegistroAfectado) ? (object)DBNull.Value : error.IdRegistroAfectado);
                 return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
@@ -586,6 +683,17 @@ WHERE IdConfiguracion = 1", cn))
             }
         }
 
+        private bool HasAnySnapshot()
+        {
+            EnsureInfrastructure();
+            using (var cn = ConexionDAL.GetConnection())
+            using (var cmd = new SqlCommand("SELECT COUNT(1) FROM IntegridadRegistro", cn))
+            {
+                cn.Open();
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+        }
+
         private void UpdateLastValidation(SqlConnection cn, SqlTransaction tran)
         {
             using (var cmd = new SqlCommand(@"UPDATE ConfiguracionSistema
@@ -601,9 +709,12 @@ WHERE IdConfiguracion = 1", cn, tran))
         {
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Usuarios', 'DVH') IS NULL ALTER TABLE Usuarios ADD DVH INT NOT NULL CONSTRAINT DF_Usuarios_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Clientes', 'DVH') IS NULL ALTER TABLE Clientes ADD DVH INT NOT NULL CONSTRAINT DF_Clientes_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Pasajeros', 'DVH') IS NULL ALTER TABLE Pasajeros ADD DVH INT NOT NULL CONSTRAINT DF_Pasajeros_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Vuelos', 'DVH') IS NULL ALTER TABLE Vuelos ADD DVH INT NOT NULL CONSTRAINT DF_Vuelos_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('ReservaCabecera', 'DVH') IS NULL ALTER TABLE ReservaCabecera ADD DVH INT NOT NULL CONSTRAINT DF_ReservaCabecera_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('ReservaDetalle', 'DVH') IS NULL ALTER TABLE ReservaDetalle ADD DVH INT NOT NULL CONSTRAINT DF_ReservaDetalle_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('ReservaPasajero', 'DVH') IS NULL ALTER TABLE ReservaPasajero ADD DVH INT NOT NULL CONSTRAINT DF_ReservaPasajero_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Bitacora', 'DVH') IS NULL ALTER TABLE Bitacora ADD DVH INT NOT NULL CONSTRAINT DF_Bitacora_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF OBJECT_ID('IntegridadDVV', 'U') IS NULL
 CREATE TABLE IntegridadDVV
 (
@@ -612,12 +723,23 @@ CREATE TABLE IntegridadDVV
     ValorDVV BIGINT NOT NULL,
     FechaCalculo DATETIME2(0) NOT NULL
 )");
+            ExecuteNonQuery(cn, tran, @"IF OBJECT_ID('IntegridadRegistro', 'U') IS NULL
+CREATE TABLE IntegridadRegistro
+(
+    IdIntegridadRegistro INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    NombreTabla NVARCHAR(100) NOT NULL,
+    IdRegistro NVARCHAR(100) NOT NULL,
+    ValorDVH INT NOT NULL,
+    FechaCalculo DATETIME2(0) NOT NULL,
+    CONSTRAINT UQ_IntegridadRegistro_TablaRegistro UNIQUE (NombreTabla, IdRegistro)
+)");
             ExecuteNonQuery(cn, tran, @"IF OBJECT_ID('IntegridadError', 'U') IS NULL
 CREATE TABLE IntegridadError
 (
     IdError INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     Fecha DATETIME2(0) NOT NULL,
     TipoError NVARCHAR(10) NOT NULL,
+    TipoOperacion NVARCHAR(20) NULL,
     NombreTabla NVARCHAR(100) NOT NULL,
     IdRegistroAfectado NVARCHAR(100) NULL,
     ValorEsperado NVARCHAR(100) NULL,
@@ -626,6 +748,7 @@ CREATE TABLE IntegridadError
     IdUsuarioAdministrador INT NULL,
     AccionTomada NVARCHAR(500) NULL
 )");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('IntegridadError', 'TipoOperacion') IS NULL ALTER TABLE IntegridadError ADD TipoOperacion NVARCHAR(20) NULL");
             ExecuteNonQuery(cn, tran, @"IF OBJECT_ID('ConfiguracionSistema', 'U') IS NULL
 CREATE TABLE ConfiguracionSistema
 (
@@ -653,9 +776,12 @@ VALUES (1, 0, NULL, NULL)");
             {
                 case "Usuarios": return "IdUsuario";
                 case "Clientes": return "IdCliente";
+                case "Pasajeros": return "IdPasajero";
                 case "Vuelos": return "IdVuelo";
                 case "ReservaCabecera": return "IdReservaCabecera";
                 case "ReservaDetalle": return "IdReservaDetalle";
+                case "ReservaPasajero": return "IdReservaPasajero";
+                case "Bitacora": return "IdBitacora";
                 default: throw new ArgumentException("Tabla no protegida: " + tableName);
             }
         }
@@ -667,6 +793,7 @@ VALUES (1, 0, NULL, NULL)");
                 IdError = Convert.ToInt32(rdr["IdError"]),
                 Fecha = Convert.ToDateTime(rdr["Fecha"]),
                 TipoError = rdr["TipoError"].ToString(),
+                TipoOperacion = rdr["TipoOperacion"] != DBNull.Value ? rdr["TipoOperacion"].ToString() : null,
                 NombreTabla = rdr["NombreTabla"].ToString(),
                 IdRegistroAfectado = rdr["IdRegistroAfectado"] != DBNull.Value ? rdr["IdRegistroAfectado"].ToString() : null,
                 ValorEsperado = rdr["ValorEsperado"] != DBNull.Value ? rdr["ValorEsperado"].ToString() : null,
@@ -700,16 +827,34 @@ VALUES (1, 0, NULL, NULL)");
             try
             {
                 using (var cn = ConexionDAL.GetConnection())
-                using (var cmd = new SqlCommand(@"INSERT INTO Bitacora (Fecha, Usuario, Accion, Criticidad, Pantalla)
-VALUES (@Fecha, @Usuario, @Accion, @Criticidad, @Pantalla)", cn))
                 {
-                    cmd.Parameters.AddWithValue("@Fecha", DateTime.Now);
-                    cmd.Parameters.AddWithValue("@Usuario", user ?? "Sistema");
-                    cmd.Parameters.AddWithValue("@Accion", action ?? string.Empty);
-                    cmd.Parameters.AddWithValue("@Criticidad", criticality);
-                    cmd.Parameters.AddWithValue("@Pantalla", "Control de Integridad");
                     cn.Open();
-                    cmd.ExecuteNonQuery();
+                    using (var tran = cn.BeginTransaction())
+                    {
+                        try
+                        {
+                            int id;
+                            using (var cmd = new SqlCommand(@"INSERT INTO Bitacora (Fecha, Usuario, Accion, Criticidad, Pantalla, DVH)
+VALUES (@Fecha, @Usuario, @Accion, @Criticidad, @Pantalla, 0);
+SELECT SCOPE_IDENTITY();", cn, tran))
+                            {
+                                cmd.Parameters.AddWithValue("@Fecha", DateTime.Now);
+                                cmd.Parameters.AddWithValue("@Usuario", user ?? "Sistema");
+                                cmd.Parameters.AddWithValue("@Accion", action ?? string.Empty);
+                                cmd.Parameters.AddWithValue("@Criticidad", criticality);
+                                cmd.Parameters.AddWithValue("@Pantalla", "Control de Integridad");
+                                id = Convert.ToInt32(cmd.ExecuteScalar());
+                            }
+
+                            UpdateRecordAndTableDVV(cn, tran, "Bitacora", id);
+                            tran.Commit();
+                        }
+                        catch
+                        {
+                            try { tran.Rollback(); } catch { }
+                            throw;
+                        }
+                    }
                 }
             }
             catch

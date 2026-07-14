@@ -94,14 +94,16 @@ SELECT SCOPE_IDENTITY();", cn, tran))
                             }
                         }
 
+                        var reservaPasajeroInsertados = new List<int>();
                         foreach (var rp in pasajeros)
                         {
-                            using (var cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero)
-VALUES (@IdReservaCabecera, @IdPasajero);", cn, tran))
+                            using (var cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero, DVH)
+VALUES (@IdReservaCabecera, @IdPasajero, 0);
+SELECT SCOPE_IDENTITY();", cn, tran))
                             {
                                 cmd.Parameters.AddWithValue("@IdReservaCabecera", idReservaCabecera);
                                 cmd.Parameters.AddWithValue("@IdPasajero", rp.IdPasajero);
-                                cmd.ExecuteNonQuery();
+                                reservaPasajeroInsertados.Add(Convert.ToInt32(cmd.ExecuteScalar()));
                             }
                         }
 
@@ -109,11 +111,14 @@ VALUES (@IdReservaCabecera, @IdPasajero);", cn, tran))
                         integrity.UpdateRecordDVH(cn, tran, "ReservaCabecera", idReservaCabecera);
                         foreach (var detalleId in detallesInsertados)
                             integrity.UpdateRecordDVH(cn, tran, "ReservaDetalle", detalleId);
+                        foreach (var reservaPasajeroId in reservaPasajeroInsertados)
+                            integrity.UpdateRecordDVH(cn, tran, "ReservaPasajero", reservaPasajeroId);
                         foreach (var vueloId in vuelosAfectados)
                             integrity.UpdateRecordDVH(cn, tran, "Vuelos", vueloId);
 
                         integrity.UpdateTableDVV(cn, tran, "ReservaCabecera");
                         integrity.UpdateTableDVV(cn, tran, "ReservaDetalle");
+                        integrity.UpdateTableDVV(cn, tran, "ReservaPasajero");
                         integrity.UpdateTableDVV(cn, tran, "Vuelos");
 
                         tran.Commit();

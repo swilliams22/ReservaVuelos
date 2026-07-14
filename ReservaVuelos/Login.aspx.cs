@@ -22,23 +22,32 @@ namespace ReservaVuelos
         {
             var email = txtEmail.Text.Trim();
             var pwd = txtPassword.Text;
-            var srv = new SeguridadService();
-            var user = srv.Authenticate(email, pwd);
-            if (user != null)
+            try
             {
-                SesionService.SetUser(user);
-                var integrity = new IntegrityService();
-                integrity.ValidateAllAndPersist();
-                if (integrity.IsContingencyMode())
+                var srv = new SeguridadService();
+                var user = srv.Authenticate(email, pwd);
+                if (user != null)
                 {
-                    Response.Redirect(user.Rol == "Administrador" ? "GestionIntegridad.aspx" : "Mantenimiento.aspx");
-                    return;
+                    SesionService.SetUser(user);
+                    var integrity = new IntegrityService();
+                    integrity.ValidateAllAndPersist();
+                    if (integrity.IsContingencyMode())
+                    {
+                        Response.Redirect(user.Rol == "Administrador" ? "GestionIntegridad.aspx" : "Mantenimiento.aspx");
+                        return;
+                    }
+                    Response.Redirect("Default.aspx");
                 }
-                Response.Redirect("Default.aspx");
+                else
+                {
+                    lblMsg.Text = "Usuario o contraseña incorrectos.";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                lblMsg.Text = "Usuario o contraseña incorrectos.";
+                var integrity = new IntegrityService();
+                if (integrity.RedirectIfContingencyActive(SesionService.GetUser())) return;
+                lblMsg.Text = "Error al iniciar sesión: " + ex.Message;
             }
         }
     }
