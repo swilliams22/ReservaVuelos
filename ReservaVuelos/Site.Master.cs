@@ -26,7 +26,7 @@ namespace ReservaVuelos
                 return;
             }
 
-            if (integrity.IsContingencyMode() && user != null && user.Rol == "Administrador" &&
+            if (integrity.IsContingencyMode() && SesionService.IsWebMaster(user) &&
                 !string.Equals(pageName, "GestionIntegridad.aspx", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(pageName, "Backup.aspx", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(pageName, "Bitacora.aspx", StringComparison.OrdinalIgnoreCase))
@@ -40,10 +40,10 @@ namespace ReservaVuelos
             if (menuLogin != null) menuLogin.Visible = user == null;
             if (menuRegistro != null) menuRegistro.Visible = user == null;
             if (menuLogout != null) menuLogout.Visible = user != null;
-            if (menuAdmin != null) menuAdmin.Visible = user != null && user.Rol == "Administrador";
-            if (menuIntegridad != null) menuIntegridad.Visible = user != null && user.Rol == "Administrador";
-            if (menuBackup != null) menuBackup.Visible = user != null && user.Rol == "Administrador";
-            if (menuBitacora != null) menuBitacora.Visible = user != null && user.Rol == "Administrador";
+            if (menuAdmin != null) menuAdmin.Visible = SesionService.IsAdministrator(user);
+            if (menuIntegridad != null) menuIntegridad.Visible = SesionService.IsWebMaster(user);
+            if (menuBackup != null) menuBackup.Visible = SesionService.IsWebMaster(user);
+            if (menuBitacora != null) menuBitacora.Visible = SesionService.IsWebMaster(user);
         }
     }
 }

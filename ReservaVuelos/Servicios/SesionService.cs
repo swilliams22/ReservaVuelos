@@ -1,5 +1,6 @@
 ﻿using System.Web;
 using ReservaVuelos.BE;
+using System;
 
 namespace ReservaVuelos.Servicios
 {
@@ -19,6 +20,22 @@ namespace ReservaVuelos.Servicios
         public static void Clear()
         {
             HttpContext.Current.Session.Remove("User");
+        }
+
+        public static bool IsAdministrator(Usuario user)
+        {
+            return HasRole(user, "Administrador");
+        }
+
+        public static bool IsWebMaster(Usuario user)
+        {
+            return HasRole(user, "WebMaster");
+        }
+
+        private static bool HasRole(Usuario user, string role)
+        {
+            return user != null &&
+                   string.Equals(user.Rol, role, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

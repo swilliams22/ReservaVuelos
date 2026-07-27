@@ -27,7 +27,7 @@ namespace ReservaVuelos
         protected void Page_Load(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (user == null || user.Rol != "Administrador")
+            if (!SesionService.IsWebMaster(user))
             {
                 Response.Redirect("Login.aspx");
                 return;
@@ -44,7 +44,7 @@ namespace ReservaVuelos
         protected void btnGenerarBackup_Click(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (user == null || user.Rol != "Administrador")
+            if (!SesionService.IsWebMaster(user))
             {
                 Response.Redirect("Login.aspx");
                 return;
@@ -163,7 +163,7 @@ namespace ReservaVuelos
         protected void btnRestaurarBackup_Click(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (user == null || user.Rol != "Administrador")
+            if (!SesionService.IsWebMaster(user))
             {
                 Response.Redirect("Login.aspx");
                 return;

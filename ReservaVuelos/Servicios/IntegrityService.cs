@@ -399,10 +399,10 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
             var allowedForAll = new[] { "Login.aspx", "Logout.aspx", "Mantenimiento.aspx" };
             if (allowedForAll.Any(p => string.Equals(p, pageName, StringComparison.OrdinalIgnoreCase))) return true;
 
-            if (user != null && string.Equals(user.Rol, "Administrador", StringComparison.OrdinalIgnoreCase))
+            if (SesionService.IsWebMaster(user))
             {
-                var allowedAdmin = new[] { "GestionIntegridad.aspx", "Backup.aspx", "Bitacora.aspx" };
-                return allowedAdmin.Any(p => string.Equals(p, pageName, StringComparison.OrdinalIgnoreCase));
+                var allowedWebMaster = new[] { "GestionIntegridad.aspx", "Backup.aspx", "Bitacora.aspx" };
+                return allowedWebMaster.Any(p => string.Equals(p, pageName, StringComparison.OrdinalIgnoreCase));
             }
 
             return false;
@@ -428,7 +428,7 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
             var context = HttpContext.Current;
             if (context == null) return false;
 
-            var target = user != null && string.Equals(user.Rol, "Administrador", StringComparison.OrdinalIgnoreCase)
+            var target = SesionService.IsWebMaster(user)
                 ? "~/GestionIntegridad.aspx"
                 : "~/Mantenimiento.aspx";
 

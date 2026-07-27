@@ -31,7 +31,7 @@ CREATE TABLE dbo.Usuarios
     DVH INT NOT NULL CONSTRAINT DF_Usuarios_DVH DEFAULT (0),
     CONSTRAINT PK_Usuarios PRIMARY KEY CLUSTERED (IdUsuario),
     CONSTRAINT UQ_Usuarios_Email UNIQUE (Email),
-    CONSTRAINT CK_Usuarios_Rol CHECK (Rol IN (N'Administrador', N'Usuario'))
+    CONSTRAINT CK_Usuarios_Rol CHECK (Rol IN (N'Administrador', N'WebMaster', N'Usuario'))
 );
 GO
 

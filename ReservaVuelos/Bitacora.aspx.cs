@@ -10,7 +10,7 @@ namespace ReservaVuelos
         protected void Page_Load(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (user == null || user.Rol != "Administrador")
+            if (!SesionService.IsWebMaster(user))
             {
                 Response.Redirect("Login.aspx");
                 return;

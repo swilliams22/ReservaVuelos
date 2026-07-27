@@ -12,6 +12,12 @@ update Usuarios
 set rol = 'Administrador'
 where IdUsuario = 3
 
+-- Asignar el perfil tecnico. Después de este cambio se deben recalcular
+-- los DVH/DVV desde GestionIntegridad.aspx con una sesión WebMaster.
+update Usuarios
+set rol = 'WebMaster'
+where IdUsuario = 4
+
 SELECT v.IdVuelo, v.Origen, v.Destino, v.FechaSalida
 FROM dbo.Vuelos v
 WHERE NOT EXISTS (SELECT 1 FROM dbo.ReservaDetalle rd WHERE rd.IdVuelo = v.IdVuelo)

@@ -33,7 +33,7 @@ namespace ReservaVuelos
                     integrity.ValidateAllAndPersist();
                     if (integrity.IsContingencyMode())
                     {
-                        Response.Redirect(user.Rol == "Administrador" ? "GestionIntegridad.aspx" : "Mantenimiento.aspx");
+                        Response.Redirect(SesionService.IsWebMaster(user) ? "GestionIntegridad.aspx" : "Mantenimiento.aspx");
                         return;
                     }
                     Response.Redirect("Default.aspx");
