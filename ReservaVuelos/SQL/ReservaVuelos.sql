@@ -351,13 +351,20 @@ VALUES
     (N'Mar del Plata',N'Buenos Aires', CAST(DATEADD(DAY,  8, GETDATE()) AS DATE), CAST(N'19:10:00' AS TIME),  72000.00, 50, 1, GETDATE(), 0);
 GO
 
--- Idiomas y textos de la interfaz (es-AR es el idioma por defecto).
+-- ============================================================================
+-- IDIOMAS Y TEXTOS DE LA INTERFAZ
 -- Clave de cada texto: pantalla.tipo.nombre. Al migrar una pantalla se agregan sus filas aca.
-INSERT INTO dbo.Idioma (Codigo, Nombre, EsDefault, Activo)
-VALUES
-    (N'es-AR', N'Español', 1, 1),
-    (N'en-US', N'English', 0, 1);
+-- Esta seccion se puede ejecutar sola (sobre ReservaVuelosDB) las veces que haga falta:
+-- solo agrega lo que falta y NO modifica traducciones ya cargadas o editadas.
+-- ============================================================================
+USE ReservaVuelosDB;
 GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Idioma WHERE Codigo = N'es-AR')
+    INSERT INTO dbo.Idioma (Codigo, Nombre, EsDefault, Activo) VALUES (N'es-AR', N'Español', 1, 1);
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Idioma WHERE Codigo = N'en-US')
+    INSERT INTO dbo.Idioma (Codigo, Nombre, EsDefault, Activo) VALUES (N'en-US', N'English', 0, 1);
 
 DECLARE @Seed TABLE
 (
@@ -368,36 +375,84 @@ DECLARE @Seed TABLE
     En NVARCHAR(500)
 );
 
-INSERT INTO @Seed (Clave, Pantalla, Descripcion, Es, En) VALUES
--- Menú (Site.Master)
-(N'menu.buscarVuelos',  N'Menú', N'Menú: buscar vuelos',                  N'Buscar vuelos',  N'Search flights'),
-(N'menu.misReservas',   N'Menú', N'Menú: mis reservas',                   N'Mis reservas',   N'My bookings'),
-(N'menu.misDatos',      N'Menú', N'Menú: mis datos',                      N'Mis datos',      N'My details'),
-(N'menu.admin',         N'Menú', N'Menú: administración de vuelos',       N'Administración', N'Administration'),
-(N'menu.integridad',    N'Menú', N'Menú: gestión de integridad',          N'Integridad',     N'Integrity'),
-(N'menu.backup',        N'Menú', N'Menú: backups',                        N'Backups',        N'Backups'),
-(N'menu.bitacora',      N'Menú', N'Menú: bitácora',                       N'Bitácora',       N'Audit log'),
-(N'menu.login',         N'Menú', N'Menú: iniciar sesión',                 N'Login',          N'Log in'),
-(N'menu.registro',      N'Menú', N'Menú: registrarse',                    N'Registro',       N'Sign up'),
-(N'menu.logout',        N'Menú', N'Menú: cerrar sesión',                  N'Logout',         N'Log out'),
+INSERT INTO @Seed (Clave, Pantalla, Descripcion, Es, En)
+VALUES
+-- Menu
+(N'menu.buscarVuelos', N'Menú', N'Menú: buscar vuelos', N'Buscar vuelos', N'Search flights'),
+(N'menu.misReservas', N'Menú', N'Menú: mis reservas', N'Mis reservas', N'My bookings'),
+(N'menu.misDatos', N'Menú', N'Menú: mis datos', N'Mis datos', N'My details'),
+(N'menu.admin', N'Menú', N'Menú: administración de vuelos', N'Administración', N'Administration'),
+(N'menu.integridad', N'Menú', N'Menú: gestión de integridad', N'Integridad', N'Integrity'),
+(N'menu.backup', N'Menú', N'Menú: backups', N'Backups', N'Backups'),
+(N'menu.bitacora', N'Menú', N'Menú: bitácora', N'Bitácora', N'Audit log'),
+(N'menu.login', N'Menú', N'Menú: iniciar sesión', N'Login', N'Log in'),
+(N'menu.registro', N'Menú', N'Menú: registrarse', N'Registro', N'Sign up'),
+(N'menu.logout', N'Menú', N'Menú: cerrar sesión', N'Logout', N'Log out'),
 -- Login
-(N'login.titulo',                 N'Login', N'Título de la pantalla y de la pestaña', N'Login',                 N'Log in'),
-(N'login.lbl.email',              N'Login', N'Etiqueta del campo email',              N'Email',                 N'Email'),
-(N'login.lbl.password',           N'Login', N'Etiqueta del campo contraseña',         N'Contraseña',            N'Password'),
-(N'login.chk.mostrarPassword',    N'Login', N'Casilla para ver la contraseña',        N'Mostrar contraseña',    N'Show password'),
-(N'login.btn.entrar',             N'Login', N'Botón de ingreso',                      N'Entrar',                N'Sign in'),
+(N'login.titulo', N'Login', N'Título de la pantalla y de la pestaña', N'Login', N'Log in'),
+(N'login.lbl.email', N'Login', N'Etiqueta del campo email', N'Email', N'Email'),
+(N'login.lbl.password', N'Login', N'Etiqueta del campo contraseña', N'Contraseña', N'Password'),
+(N'login.chk.mostrarPassword', N'Login', N'Casilla para ver la contraseña', N'Mostrar contraseña', N'Show password'),
+(N'login.btn.entrar', N'Login', N'Botón de ingreso', N'Entrar', N'Sign in'),
 (N'login.msg.credencialesInvalidas', N'Login', N'Mensaje: email o contraseña incorrectos', N'Usuario o contraseña incorrectos.', N'Incorrect email or password.'),
-(N'login.msg.errorIniciarSesion', N'Login', N'Mensaje: prefijo de error al ingresar (se le agrega el detalle)', N'Error al iniciar sesión', N'Sign-in error');
+(N'login.msg.errorIniciarSesion', N'Login', N'Mensaje: prefijo de error al ingresar (se le agrega el detalle)', N'Error al iniciar sesión', N'Sign-in error'),
+-- Buscar vuelos
+(N'buscar.titulo', N'Buscar vuelos', N'Titulo de la pestana', N'Buscar vuelos', N'Search flights'),
+(N'buscar.hero.titulo', N'Buscar vuelos', N'Banner: titulo', N'VOLA EN CUOTAS', N'FLY IN INSTALLMENTS'),
+(N'buscar.hero.acento', N'Buscar vuelos', N'Banner: texto destacado', N'POR ARGENTINA', N'ACROSS ARGENTINA'),
+(N'buscar.tab.vuelos', N'Buscar vuelos', N'Pestana vuelos', N'VUELOS', N'FLIGHTS'),
+(N'buscar.tab.checkin', N'Buscar vuelos', N'Pestana check-in', N'CHECK-IN', N'CHECK-IN'),
+(N'buscar.tab.estado', N'Buscar vuelos', N'Pestana estado de vuelo', N'ESTADO DE VUELO', N'FLIGHT STATUS'),
+(N'buscar.tab.miReserva', N'Buscar vuelos', N'Pestana mi reserva', N'MI RESERVA', N'MY BOOKING'),
+(N'buscar.rb.ida', N'Buscar vuelos', N'Opcion solo ida', N'Ida', N'One way'),
+(N'buscar.rb.idaVuelta', N'Buscar vuelos', N'Opcion ida y vuelta', N'Ida y vuelta', N'Round trip'),
+(N'buscar.rb.multidestino', N'Buscar vuelos', N'Opcion multidestino (deshabilitada)', N'Multidestino', N'Multi-city'),
+(N'buscar.tip.proximamente', N'Buscar vuelos', N'Tooltip de multidestino', N'Próximamente', N'Coming soon'),
+(N'buscar.lbl.origen', N'Buscar vuelos', N'Etiqueta origen', N'Origen', N'Origin'),
+(N'buscar.lbl.destino', N'Buscar vuelos', N'Etiqueta destino', N'Destino', N'Destination'),
+(N'buscar.lbl.salida', N'Buscar vuelos', N'Etiqueta fecha de salida', N'Salida', N'Departure'),
+(N'buscar.lbl.regreso', N'Buscar vuelos', N'Etiqueta fecha de regreso', N'Regreso', N'Return'),
+(N'buscar.lbl.pasajeros', N'Buscar vuelos', N'Etiqueta cantidad de pasajeros', N'Cantidad de pasajeros', N'Number of passengers'),
+(N'buscar.ph.origen', N'Buscar vuelos', N'Placeholder origen', N'Ciudad de origen', N'Origin city'),
+(N'buscar.ph.destino', N'Buscar vuelos', N'Placeholder destino', N'Ciudad de destino', N'Destination city'),
+(N'buscar.tip.intercambiar', N'Buscar vuelos', N'Tooltip del boton intercambiar', N'Intercambiar origen y destino', N'Swap origin and destination'),
+(N'buscar.btn.buscar', N'Buscar vuelos', N'Boton buscar', N'BUSCAR VUELOS', N'SEARCH FLIGHTS'),
+(N'buscar.nota.titulo', N'Buscar vuelos', N'Aclaracion: titulo', N'Aclaración:', N'Note:'),
+(N'buscar.nota.texto', N'Buscar vuelos', N'Aclaracion: texto', N'Las reservas se realizan por tramo. Para un viaje de ida y vuelta, reserve primero el vuelo de ida y luego el vuelo de vuelta.', N'Bookings are made per leg. For a round trip, book the outbound flight first and then the return flight.'),
+(N'buscar.grid.ida', N'Buscar vuelos', N'Titulo de la grilla de ida', N'Vuelos - Ida', N'Flights - Outbound'),
+(N'buscar.grid.vuelta', N'Buscar vuelos', N'Titulo de la grilla de vuelta', N'Vuelos - Vuelta', N'Flights - Return'),
+(N'buscar.col.id', N'Buscar vuelos', N'Grilla: columna Id', N'Id', N'Id'),
+(N'buscar.col.origen', N'Buscar vuelos', N'Grilla: columna Origen', N'Origen', N'Origin'),
+(N'buscar.col.destino', N'Buscar vuelos', N'Grilla: columna Destino', N'Destino', N'Destination'),
+(N'buscar.col.fecha', N'Buscar vuelos', N'Grilla: columna Fecha', N'Fecha', N'Date'),
+(N'buscar.col.hora', N'Buscar vuelos', N'Grilla: columna Hora', N'Hora', N'Time'),
+(N'buscar.col.precio', N'Buscar vuelos', N'Grilla: columna Precio', N'Precio', N'Price'),
+(N'buscar.col.cupos', N'Buscar vuelos', N'Grilla: columna Cupos', N'Cupos', N'Seats'),
+(N'buscar.btn.reservar', N'Buscar vuelos', N'Grilla: boton Reservar', N'Reservar', N'Book'),
+(N'buscar.btn.verVueltas', N'Buscar vuelos', N'Grilla: boton Ver vueltas', N'Ver vueltas', N'View returns'),
+(N'buscar.msg.confirmarReserva', N'Buscar vuelos', N'Confirmacion antes de reservar', N'¿Confirma reservar este vuelo?', N'Do you want to book this flight?'),
+(N'buscar.msg.fechaVueltaPosterior', N'Buscar vuelos', N'Error: fecha de vuelta', N'La fecha de vuelta debe ser posterior a la fecha de ida.', N'The return date must be after the departure date.'),
+(N'buscar.msg.fechaVueltaPosteriorSeleccionada', N'Buscar vuelos', N'Error: fecha de vuelta vs vuelo elegido', N'La fecha de vuelta debe ser posterior a la fecha de ida seleccionada.', N'The return date must be after the selected departure date.'),
+(N'buscar.msg.cantidadInvalida', N'Buscar vuelos', N'Error: cantidad de pasajeros', N'Debe indicar una cantidad de pasajeros válida.', N'Please enter a valid number of passengers.'),
+(N'buscar.msg.sinVuelos', N'Buscar vuelos', N'Aviso: busqueda sin resultados', N'No se encontraron vuelos para la búsqueda seleccionada.', N'No flights were found for your search.'),
+(N'buscar.msg.sinVuelosVuelta', N'Buscar vuelos', N'Aviso: sin vuelos de vuelta', N'No se encontraron vuelos de vuelta disponibles.', N'No return flights are available.'),
+(N'buscar.msg.vueloNoObtenido', N'Buscar vuelos', N'Error: vuelo no encontrado', N'No se pudo obtener el vuelo seleccionado.', N'The selected flight could not be retrieved.'),
+-- Comun
+(N'comun.footer', N'Común', N'Pie de pagina de la Master', N'Mi aplicación ASP.NET', N'My ASP.NET application'),
+(N'comun.btn.cancelar', N'Común', N'Modal de confirmacion: boton cancelar', N'Cancelar', N'Cancel'),
+(N'comun.btn.confirmar', N'Común', N'Modal de confirmacion: boton confirmar', N'Confirmar', N'Confirm');
 
 INSERT INTO dbo.Etiqueta (Clave, Pantalla, Descripcion)
-SELECT Clave, Pantalla, Descripcion
-FROM @Seed;
+SELECT s.Clave, s.Pantalla, s.Descripcion
+FROM @Seed s
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Etiqueta e WHERE e.Clave = s.Clave);
 
 INSERT INTO dbo.Traduccion (IdIdioma, IdEtiqueta, Texto)
 SELECT i.IdIdioma, e.IdEtiqueta, CASE i.Codigo WHEN N'es-AR' THEN s.Es ELSE s.En END
 FROM @Seed s
 JOIN dbo.Etiqueta e ON e.Clave = s.Clave
-JOIN dbo.Idioma i ON i.Codigo IN (N'es-AR', N'en-US');
+JOIN dbo.Idioma i ON i.Codigo IN (N'es-AR', N'en-US')
+WHERE NOT EXISTS (SELECT 1 FROM dbo.Traduccion t WHERE t.IdIdioma = i.IdIdioma AND t.IdEtiqueta = e.IdEtiqueta);
 GO
 
 -- Inicializacion de DVH/DVV:

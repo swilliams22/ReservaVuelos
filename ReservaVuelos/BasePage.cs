@@ -1,6 +1,7 @@
 ﻿using ReservaVuelos.BE;
 using ReservaVuelos.Servicios;
 using System;
+using System.Web;
 using System.Web.UI;
 
 namespace ReservaVuelos
@@ -29,6 +30,13 @@ namespace ReservaVuelos
             ActualizarIdioma(IdiomaService.Instancia.IdiomaActual);
         }
 
+        // Despues de los eventos: traduce lo que se creo recien (filas de una grilla, paneles que se muestran).
+        protected override void OnPreRender(EventArgs e)
+        {
+            base.OnPreRender(e);
+            ActualizarIdioma(IdiomaService.Instancia.IdiomaActual);
+        }
+
         protected override void OnUnload(EventArgs e)
         {
             IdiomaService.Instancia.Desuscribir(this);
@@ -48,6 +56,12 @@ namespace ReservaVuelos
         protected string T(string clave)
         {
             return Traductor.T(clave);
+        }
+
+        /// <summary>Texto listo para ponerlo entre comillas simples dentro de un script del .aspx.</summary>
+        protected string TJs(string clave)
+        {
+            return HttpUtility.JavaScriptStringEncode(Traductor.T(clave));
         }
     }
 }

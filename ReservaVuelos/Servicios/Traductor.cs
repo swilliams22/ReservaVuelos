@@ -21,6 +21,16 @@ namespace ReservaVuelos.Servicios
     {
         public const string ATRIBUTO = "data-i18n";
 
+        // GridView: claves de los encabezados, una por columna y separadas por coma (vacia = no traducir).
+        public const string ATRIBUTO_ENCABEZADOS = "data-i18n-headers";
+
+        // data-i18n-xxx="clave" traduce el atributo HTML xxx (tooltip, placeholder).
+        private static readonly string[][] ATRIBUTOS_HTML =
+        {
+            new[] { "data-i18n-title", "title" },
+            new[] { "data-i18n-placeholder", "placeholder" }
+        };
+
         // ---------- Textos armados en código ----------
 
         /// <summary>Texto de la clave en el idioma del usuario actual.</summary>
@@ -34,6 +44,13 @@ namespace ReservaVuelos.Servicios
             string texto;
             if (BuscarTexto(clave, idioma, out texto)) return texto;
             return "[" + clave + "]";   // se nota enseguida qué clave falta cargar
+        }
+
+        /// <summary>Texto traducido; si la clave no existe devuelve el texto actual (el del .aspx).</summary>
+        public static string TraducirOConservar(string clave, Idioma idioma, string textoActual)
+        {
+            string texto;
+            return BuscarTexto(clave, idioma, out texto) ? texto : textoActual;
         }
 
         // ---------- Controles marcados con data-i18n ----------
@@ -77,6 +94,7 @@ namespace ReservaVuelos.Servicios
 
         private static void Recorrer(Control control, Idioma idioma, bool esRaiz)
         {
+            if (!control.Visible) return;   // lo que no se muestra no hace falta traducirlo
             if (!esRaiz && (control is MasterPage || control is ContentPlaceHolder)) return;
 
             Aplicar(control, idioma);
@@ -87,22 +105,49 @@ namespace ReservaVuelos.Servicios
 
         private static void Aplicar(Control control, Idioma idioma)
         {
-            var clave = ObtenerClave(control);
-            if (string.IsNullOrEmpty(clave)) return;
+            var atributos = ObtenerAtributos(control);
+            if (atributos == null) return;
 
             string texto;
-            if (!BuscarTexto(clave, idioma, out texto)) return;   // conserva el texto del .aspx
 
-            AsignarTexto(control, texto);
+            // Si la clave no existe se conserva el texto original del .aspx.
+            var clave = atributos[ATRIBUTO];
+            if (!string.IsNullOrEmpty(clave) && BuscarTexto(clave, idioma, out texto))
+                AsignarTexto(control, texto);
+
+            foreach (var par in ATRIBUTOS_HTML)
+            {
+                var claveAtributo = atributos[par[0]];
+                if (!string.IsNullOrEmpty(claveAtributo) && BuscarTexto(claveAtributo, idioma, out texto))
+                    atributos[par[1]] = texto;
+            }
+
+            var grilla = control as GridView;
+            if (grilla != null)
+                TraducirEncabezados(grilla, atributos[ATRIBUTO_ENCABEZADOS], idioma);
         }
 
-        private static string ObtenerClave(Control control)
+        private static void TraducirEncabezados(GridView grilla, string claves, Idioma idioma)
+        {
+            if (string.IsNullOrEmpty(claves) || grilla.HeaderRow == null) return;
+
+            var lista = claves.Split(',');
+            for (int i = 0; i < lista.Length && i < grilla.HeaderRow.Cells.Count; i++)
+            {
+                var clave = lista[i].Trim();
+                string texto;
+                if (clave.Length > 0 && BuscarTexto(clave, idioma, out texto))
+                    grilla.HeaderRow.Cells[i].Text = texto;
+            }
+        }
+
+        private static AttributeCollection ObtenerAtributos(Control control)
         {
             var web = control as WebControl;
-            if (web != null) return web.Attributes[ATRIBUTO];
+            if (web != null) return web.Attributes;
 
             var html = control as HtmlControl;
-            if (html != null) return html.Attributes[ATRIBUTO];
+            if (html != null) return html.Attributes;
 
             return null;
         }
@@ -114,7 +159,6 @@ namespace ReservaVuelos.Servicios
             if (control is LinkButton) { ((LinkButton)control).Text = texto; return; }
             if (control is HyperLink) { ((HyperLink)control).Text = texto; return; }
             if (control is CheckBox) { ((CheckBox)control).Text = texto; return; }            // incluye RadioButton
-            if (control is TextBox) { ((TextBox)control).Attributes["placeholder"] = texto; return; }
             if (control is HtmlInputButton) { ((HtmlInputButton)control).Value = texto; return; }
             if (control is HtmlContainerControl) { ((HtmlContainerControl)control).InnerText = texto; return; }  // a, h2, span, button...
         }

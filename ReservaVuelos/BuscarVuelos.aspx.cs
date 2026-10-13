@@ -7,8 +7,22 @@ using System.Web.UI.WebControls;
 
 namespace ReservaVuelos
 {
-    public partial class BuscarVuelos : System.Web.UI.Page
+    public partial class BuscarVuelos : BasePage
     {
+        protected override string ClaveTitulo
+        {
+            get { return "buscar.titulo"; }
+        }
+
+        // Los RadioButton se traducen desde acá: con data-i18n ASP.NET los envuelve en un <span>
+        // y se rompe el espaciado de .trip-type label.
+        public override void ActualizarIdioma(Idioma idioma)
+        {
+            base.ActualizarIdioma(idioma);
+            rbIda.Text = Traductor.TraducirOConservar("buscar.rb.ida", idioma, rbIda.Text);
+            rbIdaVuelta.Text = Traductor.TraducirOConservar("buscar.rb.idaVuelta", idioma, rbIdaVuelta.Text);
+        }
+
         private VueloBLL _vBLL = new VueloBLL();
         private BitacoraBLL _bBLL = new BitacoraBLL();
 
@@ -64,14 +78,14 @@ namespace ReservaVuelos
             // Las fechas son opcionales. Solo validamos el orden si ambas fueron informadas.
             if (fechaIda.HasValue && fechaVuelta.HasValue && fechaVuelta.Value.Date <= fechaIda.Value.Date)
             {
-                lblMsg.Text = "La fecha de vuelta debe ser posterior a la fecha de ida.";
+                lblMsg.Text = T("buscar.msg.fechaVueltaPosterior");
                 return;
             }
 
             var cantidadPasajeros = ObtenerCantidadPasajeros();
             if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
             {
-                lblMsg.Text = "Debe indicar una cantidad de pasajeros válida.";
+                lblMsg.Text = T("buscar.msg.cantidadInvalida");
                 return;
             }
 
@@ -85,7 +99,7 @@ namespace ReservaVuelos
             gvVuelos.DataBind();
 
             if (listaIda.Count == 0)
-                lblMsg.Text = "No se encontraron vuelos para la búsqueda seleccionada.";
+                lblMsg.Text = T("buscar.msg.sinVuelos");
 
             // Si el usuario selecciona Ida y vuelta, buscar el tramo inverso.
             // La vuelta debe ser posterior a la fecha de ida cuando hay fecha de ida.
@@ -107,7 +121,7 @@ namespace ReservaVuelos
                 gvVuelosReturn.DataBind();
 
                 if (listaVuelta.Count == 0)
-                    lblMsg.Text = "No se encontraron vuelos de vuelta disponibles.";
+                    lblMsg.Text = T("buscar.msg.sinVuelosVuelta");
             }
             else
             {
@@ -135,7 +149,7 @@ namespace ReservaVuelos
                 if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = "Debe indicar una cantidad de pasajeros válida.";
+                    lblMsg.Text = T("buscar.msg.cantidadInvalida");
                     return;
                 }
 
@@ -150,7 +164,7 @@ namespace ReservaVuelos
                 if (vueloIda == null)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = "No se pudo obtener el vuelo seleccionado.";
+                    lblMsg.Text = T("buscar.msg.vueloNoObtenido");
                     return;
                 }
 
@@ -160,7 +174,7 @@ namespace ReservaVuelos
                 if (fechaVuelta.HasValue && fechaVuelta.Value.Date <= vueloIda.FechaSalida.Date)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = "La fecha de vuelta debe ser posterior a la fecha de ida seleccionada.";
+                    lblMsg.Text = T("buscar.msg.fechaVueltaPosteriorSeleccionada");
                     return;
                 }
 
@@ -168,7 +182,7 @@ namespace ReservaVuelos
                 if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = "Debe indicar una cantidad de pasajeros válida.";
+                    lblMsg.Text = T("buscar.msg.cantidadInvalida");
                     return;
                 }
 
@@ -188,7 +202,7 @@ namespace ReservaVuelos
 
                 lblMsg.ForeColor = System.Drawing.Color.Red;
                 lblMsg.Text = vuelosVuelta.Count == 0
-                    ? "No se encontraron vuelos de vuelta disponibles."
+                    ? T("buscar.msg.sinVuelosVuelta")
                     : "";
             }
         }

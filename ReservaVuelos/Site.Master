@@ -74,7 +74,7 @@
             </asp:ContentPlaceHolder>
             <hr />
             <footer>
-                <p>&copy; <%: DateTime.Now.Year %> - Mi aplicación ASP.NET</p>
+                <p>&copy; <%: DateTime.Now.Year %> - <span runat="server" data-i18n="comun.footer">Mi aplicación ASP.NET</span></p>
             </footer>
         </div>
     </form>
@@ -122,6 +122,10 @@
             } catch (e) { console && console.log(e); }
             return false;
         }
+
+        // Textos del modal en el idioma actual
+        document.getElementById('confirmModalCancel').innerText = '<%= TJs("comun.btn.cancelar") %>';
+        document.getElementById('confirmModalOk').innerText = '<%= TJs("comun.btn.confirmar") %>';
     </script>
 </body>
 </html>

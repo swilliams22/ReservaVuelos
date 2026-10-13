@@ -38,6 +38,12 @@ namespace ReservaVuelos
             IdiomaService.Instancia.CambiarIdioma(ddlIdioma.SelectedValue);
         }
 
+        // Para textos dentro de los scripts de la Master.
+        protected string TJs(string clave)
+        {
+            return HttpUtility.JavaScriptStringEncode(Traductor.T(clave));
+        }
+
         private void CargarIdiomas()
         {
             ddlIdioma.DataSource = new IdiomaBLL().GetActivos();
