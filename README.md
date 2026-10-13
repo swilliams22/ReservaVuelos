@@ -22,6 +22,7 @@ La solución ya no trabaja con una tabla única de reservas. El flujo vigente us
 - `ReservaDetalle`: tramos reservados, cantidad, precio unitario y subtotal histórico.
 - `ReservaPasajero`: asociación entre reserva y pasajeros.
 - `Bitacora`: auditoría funcional.
+- `Idioma`, `Etiqueta` y `Traduccion`: idiomas de la interfaz y sus textos.
 
 ## Reglas de negocio principales
 
@@ -40,6 +41,7 @@ La solución ya no trabaja con una tabla única de reservas. El flujo vigente us
 - `MisDatos.aspx`: edición restringida de datos del cliente titular y del pasajero vinculado al usuario autenticado.
 - `AdminVuelos.aspx`: alta y baja lógica de vuelos.
 - `Bitacora.aspx`: seguimiento administrativo.
+- `GestionIdiomas.aspx`: administración de idiomas y traducciones (solo WebMaster).
 
 ## Base de datos
 
@@ -54,9 +56,35 @@ Ese script:
 - inserta vuelos de ejemplo,
 - incluye consultas de auditoría para detectar inconsistencias.
 
+## Múltiples idiomas (patrón Observer)
+
+La interfaz se puede ver en distintos idiomas con el selector de la barra de navegación. Cambian títulos, etiquetas, botones y mensajes de las pantallas traducidas; no cambian fechas, números ni moneda.
+
+- Las traducciones están en SQL Server (`Idioma`, `Etiqueta`, `Traduccion`), no en archivos, para que el WebMaster agregue un idioma sin programar.
+- `IdiomaService` es el Subject: guarda el idioma elegido en la sesión y notifica a los observers. Los observers son `Site.Master` y `BasePage`, de la que heredan las páginas traducibles (`Login`, `BuscarVuelos`, `GestionIdiomas`).
+- Un control del `.aspx` se traduce con `data-i18n="clave"`. En el code-behind se usa `T("clave")`. Si la clave no existe en el idioma elegido se usa el idioma por defecto (es-AR) y, si tampoco existe, el texto escrito en el `.aspx`.
+- La preferencia de cada usuario se guarda en `Usuarios.IdIdioma` y se aplica al iniciar sesión. Ese campo no forma parte del DVH.
+
+### Administrar idiomas
+
+`GestionIdiomas.aspx` (menú **Idiomas**, solo rol WebMaster) permite:
+
+- crear un idioma con su código (por ejemplo `pt-BR`) y nombre; queda inactivo hasta que se lo activa,
+- ver el porcentaje traducido de cada idioma,
+- editar las traducciones, filtrando por pantalla o por textos pendientes (un texto vacío elimina la traducción),
+- activar o desactivar idiomas (el idioma por defecto no se puede desactivar).
+
+Las altas, activaciones y guardados quedan en la bitácora.
+
+### Agregar textos de una pantalla nueva
+
+1. Marcar los controles con `data-i18n="pantalla.tipo.nombre"` y heredar la página de `BasePage`.
+2. Agregar las claves y sus textos en es-AR y en-US en la sección "IDIOMAS Y TEXTOS DE LA INTERFAZ" de `ReservaVuelos/SQL/ReservaVuelos.sql`.
+3. Sobre una base ya creada, ejecutar solo esa sección (a partir de `USE ReservaVuelosDB`). Es re-ejecutable: agrega lo que falta y no pisa traducciones editadas. No ejecutar el script completo, porque recrea la base.
+
 ## Configuración regional
 
-La aplicación quedó configurada en `es-AR` y UTF-8 en `Web.config`.
+La aplicación quedó configurada en `es-AR` y UTF-8 en `Web.config`. El idioma de la interfaz es independiente de esa configuración (ver Múltiples idiomas).
 
 ## Estado del proyecto
 
