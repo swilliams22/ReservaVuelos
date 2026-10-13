@@ -100,6 +100,7 @@ namespace ReservaVuelos
             if (menuIntegridad != null) menuIntegridad.Visible = SesionService.IsWebMaster(user);
             if (menuBackup != null) menuBackup.Visible = SesionService.IsWebMaster(user);
             if (menuBitacora != null) menuBitacora.Visible = SesionService.IsWebMaster(user);
+            if (menuIdiomas != null) menuIdiomas.Visible = SesionService.IsWebMaster(user);
         }
     }
 }

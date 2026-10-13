@@ -55,6 +55,7 @@
                         <li class="nav-item" id="menuIntegridad" runat="server"><a class="nav-link" runat="server" href="~/GestionIntegridad.aspx" data-i18n="menu.integridad">Integridad</a></li>
                         <li class="nav-item" id="menuBackup" runat="server"><a class="nav-link" runat="server" href="~/Backup.aspx" data-i18n="menu.backup">Backups</a></li>
                         <li class="nav-item" id="menuBitacora" runat="server"><a class="nav-link" runat="server" href="~/Bitacora.aspx" data-i18n="menu.bitacora">Bitácora</a></li>
+                        <li class="nav-item" id="menuIdiomas" runat="server"><a class="nav-link" runat="server" href="~/GestionIdiomas.aspx" data-i18n="menu.idiomas">Idiomas</a></li>
                     </ul>
                     <ul class="navbar-nav">
                         <li class="nav-item d-flex align-items-center">

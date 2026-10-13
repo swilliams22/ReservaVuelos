@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ReservaVuelos.BLL
 {
@@ -128,6 +129,50 @@ namespace ReservaVuelos.BLL
         public void GuardarPreferencia(int idUsuario, int idIdioma)
         {
             _dal.GuardarPreferencia(idUsuario, idIdioma);
+        }
+
+        // ---------- Administración (pantalla del WebMaster) ----------
+
+        public List<Idioma> GetTodos() { return _dal.GetTodos(); }
+
+        public List<string> GetPantallas() { return _dal.GetPantallas(); }
+
+        public List<EtiquetaTraduccion> GetEtiquetas(Idioma idioma, string pantalla, bool soloPendientes)
+        {
+            var baseIdioma = GetTodos().First(i => i.EsDefault);
+            return _dal.GetEtiquetas(idioma.IdIdioma, baseIdioma.IdIdioma, pantalla, soloPendientes);
+        }
+
+        /// <summary>Crea un idioma (queda inactivo hasta que se lo active). Devuelve el mensaje de error o null si salió bien.</summary>
+        public string Crear(string codigo, string nombre, out Idioma creado)
+        {
+            creado = null;
+            codigo = (codigo ?? "").Trim();
+            nombre = (nombre ?? "").Trim();
+
+            if (nombre.Length == 0 || nombre.Length > 50) return "nombre";
+            if (!Regex.IsMatch(codigo, @"^[a-z]{2,3}(-[A-Za-z0-9]{2,4})?$")) return "codigo";
+            if (_dal.ExisteCodigo(codigo)) return "existe";
+
+            var id = _dal.Crear(codigo, nombre);
+            LimpiarCache();
+            creado = new Idioma { IdIdioma = id, Codigo = codigo, Nombre = nombre };
+            return null;
+        }
+
+        /// <summary>Activa o desactiva un idioma. El idioma por defecto no se puede desactivar.</summary>
+        public bool CambiarActivo(Idioma idioma, bool activo)
+        {
+            if (!activo && idioma.EsDefault) return false;
+            _dal.CambiarActivo(idioma.IdIdioma, activo);
+            LimpiarCache();
+            return true;
+        }
+
+        public void GuardarTraducciones(Idioma idioma, Dictionary<int, string> textos)
+        {
+            _dal.GuardarTraducciones(idioma.IdIdioma, textos);
+            LimpiarCache();
         }
 
         /// <summary>Descarta la caché (la usará la pantalla de administración al guardar cambios).</summary>

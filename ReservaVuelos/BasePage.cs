@@ -48,8 +48,9 @@ namespace ReservaVuelos
         {
             Traductor.TraducirPagina(this, idioma);
 
+            // Si la clave no existe se conserva el titulo del .aspx (no se muestra [clave] en la pestaña).
             if (ClaveTitulo != null)
-                Title = Traductor.T(ClaveTitulo, idioma);
+                Title = Traductor.TraducirOConservar(ClaveTitulo, idioma, Title);
         }
 
         /// <summary>Atajo para traducir mensajes armados en el code-behind.</summary>
