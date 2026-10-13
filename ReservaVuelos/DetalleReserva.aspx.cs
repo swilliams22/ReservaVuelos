@@ -218,12 +218,17 @@ namespace ReservaVuelos
                 var pasajerosConId = new List<Pasajero>();
                 foreach (var pasajeroTemporal in PasajerosTemporal)
                 {
-                    var pasajeroExistente = _pBLL.GetByDocumento(pasajeroTemporal.Documento);
+                    // Se busca por Documento O por Email: si se buscara solo por Documento,
+                    // un pasajero nuevo que reutiliza un Email ya registrado en otro
+                    // pasajero terminaria intentando un INSERT que choca contra el indice
+                    // unico IX_Pasajeros_Email_Unique.
+                    var pasajeroExistente = _pBLL.FindByEmailOrDocumento(pasajeroTemporal.Email, pasajeroTemporal.Documento);
                     if (pasajeroExistente != null)
                     {
                         pasajeroExistente.Nombre = pasajeroTemporal.Nombre;
                         pasajeroExistente.Apellido = pasajeroTemporal.Apellido;
                         pasajeroExistente.Email = pasajeroTemporal.Email;
+                        pasajeroExistente.Documento = pasajeroTemporal.Documento;
                         pasajeroExistente.Nacionalidad = pasajeroTemporal.Nacionalidad;
                         pasajeroExistente.FechaNacimiento = pasajeroTemporal.FechaNacimiento;
                         _pBLL.Update(pasajeroExistente);

@@ -1,4 +1,4 @@
-USE master;
+﻿USE master;
 GO
 
 IF DB_ID(N'ReservaVuelosDB') IS NOT NULL
@@ -29,6 +29,7 @@ CREATE TABLE dbo.Usuarios
     Activo BIT NOT NULL CONSTRAINT DF_Usuarios_Activo DEFAULT (1),
     FechaAlta DATETIME2(0) NOT NULL CONSTRAINT DF_Usuarios_FechaAlta DEFAULT (GETDATE()),
     DVH INT NOT NULL CONSTRAINT DF_Usuarios_DVH DEFAULT (0),
+    IdIdioma INT NULL,
     CONSTRAINT PK_Usuarios PRIMARY KEY CLUSTERED (IdUsuario),
     CONSTRAINT UQ_Usuarios_Email UNIQUE (Email),
     CONSTRAINT CK_Usuarios_Rol CHECK (Rol IN (N'Administrador', N'WebMaster', N'Usuario'))
@@ -235,6 +236,52 @@ CREATE TABLE dbo.ConfiguracionSistema
 );
 GO
 
+CREATE TABLE dbo.Idioma
+(
+    IdIdioma INT IDENTITY(1,1) NOT NULL,
+    Codigo NVARCHAR(10) NOT NULL,
+    Nombre NVARCHAR(50) NOT NULL,
+    EsDefault BIT NOT NULL CONSTRAINT DF_Idioma_EsDefault DEFAULT (0),
+    Activo BIT NOT NULL CONSTRAINT DF_Idioma_Activo DEFAULT (1),
+    CONSTRAINT PK_Idioma PRIMARY KEY CLUSTERED (IdIdioma),
+    CONSTRAINT UQ_Idioma_Codigo UNIQUE (Codigo),
+    CONSTRAINT CK_Idioma_Codigo CHECK (LEN(LTRIM(RTRIM(Codigo))) > 0),
+    CONSTRAINT CK_Idioma_Nombre CHECK (LEN(LTRIM(RTRIM(Nombre))) > 0)
+);
+GO
+
+-- Solo puede existir un idioma por defecto
+CREATE UNIQUE NONCLUSTERED INDEX UX_Idioma_Default ON dbo.Idioma(EsDefault) WHERE EsDefault = 1;
+GO
+
+CREATE TABLE dbo.Etiqueta
+(
+    IdEtiqueta INT IDENTITY(1,1) NOT NULL,
+    Clave NVARCHAR(100) NOT NULL,
+    Pantalla NVARCHAR(50) NOT NULL,
+    Descripcion NVARCHAR(200) NULL,
+    CONSTRAINT PK_Etiqueta PRIMARY KEY CLUSTERED (IdEtiqueta),
+    CONSTRAINT UQ_Etiqueta_Clave UNIQUE (Clave),
+    CONSTRAINT CK_Etiqueta_Clave CHECK (LEN(LTRIM(RTRIM(Clave))) > 0)
+);
+GO
+
+CREATE TABLE dbo.Traduccion
+(
+    IdIdioma INT NOT NULL,
+    IdEtiqueta INT NOT NULL,
+    Texto NVARCHAR(500) NOT NULL,
+    CONSTRAINT PK_Traduccion PRIMARY KEY CLUSTERED (IdIdioma, IdEtiqueta),
+    CONSTRAINT FK_Traduccion_Idioma FOREIGN KEY (IdIdioma) REFERENCES dbo.Idioma(IdIdioma) ON DELETE CASCADE,
+    CONSTRAINT FK_Traduccion_Etiqueta FOREIGN KEY (IdEtiqueta) REFERENCES dbo.Etiqueta(IdEtiqueta) ON DELETE CASCADE
+);
+GO
+
+-- Idioma preferido del usuario (no forma parte del DVH de Usuarios)
+ALTER TABLE dbo.Usuarios
+    ADD CONSTRAINT FK_Usuarios_Idioma FOREIGN KEY (IdIdioma) REFERENCES dbo.Idioma(IdIdioma);
+GO
+
 CREATE NONCLUSTERED INDEX IX_Clientes_Email ON dbo.Clientes(Email);
 CREATE NONCLUSTERED INDEX IX_Pasajeros_IdUsuario ON dbo.Pasajeros(IdUsuario) WHERE IdUsuario IS NOT NULL;
 CREATE NONCLUSTERED INDEX IX_Vuelos_Busqueda ON dbo.Vuelos(Activo, FechaSalida, HoraSalida, CuposDisponibles);
@@ -302,6 +349,55 @@ VALUES
     (N'Bariloche',    N'Rosario',      CAST(DATEADD(DAY, 38, GETDATE()) AS DATE), CAST(N'20:15:00' AS TIME), 187000.00, 20, 1, GETDATE(), 0),
     (N'Buenos Aires', N'Mar del Plata',CAST(DATEADD(DAY,  4, GETDATE()) AS DATE), CAST(N'08:20:00' AS TIME),  70000.00, 50, 1, GETDATE(), 0),
     (N'Mar del Plata',N'Buenos Aires', CAST(DATEADD(DAY,  8, GETDATE()) AS DATE), CAST(N'19:10:00' AS TIME),  72000.00, 50, 1, GETDATE(), 0);
+GO
+
+-- Idiomas y textos de la interfaz (es-AR es el idioma por defecto).
+-- Clave de cada texto: pantalla.tipo.nombre. Al migrar una pantalla se agregan sus filas aca.
+INSERT INTO dbo.Idioma (Codigo, Nombre, EsDefault, Activo)
+VALUES
+    (N'es-AR', N'Español', 1, 1),
+    (N'en-US', N'English', 0, 1);
+GO
+
+DECLARE @Seed TABLE
+(
+    Clave NVARCHAR(100),
+    Pantalla NVARCHAR(50),
+    Descripcion NVARCHAR(200),
+    Es NVARCHAR(500),
+    En NVARCHAR(500)
+);
+
+INSERT INTO @Seed (Clave, Pantalla, Descripcion, Es, En) VALUES
+-- Menú (Site.Master)
+(N'menu.buscarVuelos',  N'Menú', N'Menú: buscar vuelos',                  N'Buscar vuelos',  N'Search flights'),
+(N'menu.misReservas',   N'Menú', N'Menú: mis reservas',                   N'Mis reservas',   N'My bookings'),
+(N'menu.misDatos',      N'Menú', N'Menú: mis datos',                      N'Mis datos',      N'My details'),
+(N'menu.admin',         N'Menú', N'Menú: administración de vuelos',       N'Administración', N'Administration'),
+(N'menu.integridad',    N'Menú', N'Menú: gestión de integridad',          N'Integridad',     N'Integrity'),
+(N'menu.backup',        N'Menú', N'Menú: backups',                        N'Backups',        N'Backups'),
+(N'menu.bitacora',      N'Menú', N'Menú: bitácora',                       N'Bitácora',       N'Audit log'),
+(N'menu.login',         N'Menú', N'Menú: iniciar sesión',                 N'Login',          N'Log in'),
+(N'menu.registro',      N'Menú', N'Menú: registrarse',                    N'Registro',       N'Sign up'),
+(N'menu.logout',        N'Menú', N'Menú: cerrar sesión',                  N'Logout',         N'Log out'),
+-- Login
+(N'login.titulo',                 N'Login', N'Título de la pantalla y de la pestaña', N'Login',                 N'Log in'),
+(N'login.lbl.email',              N'Login', N'Etiqueta del campo email',              N'Email',                 N'Email'),
+(N'login.lbl.password',           N'Login', N'Etiqueta del campo contraseña',         N'Contraseña',            N'Password'),
+(N'login.chk.mostrarPassword',    N'Login', N'Casilla para ver la contraseña',        N'Mostrar contraseña',    N'Show password'),
+(N'login.btn.entrar',             N'Login', N'Botón de ingreso',                      N'Entrar',                N'Sign in'),
+(N'login.msg.credencialesInvalidas', N'Login', N'Mensaje: email o contraseña incorrectos', N'Usuario o contraseña incorrectos.', N'Incorrect email or password.'),
+(N'login.msg.errorIniciarSesion', N'Login', N'Mensaje: prefijo de error al ingresar (se le agrega el detalle)', N'Error al iniciar sesión', N'Sign-in error');
+
+INSERT INTO dbo.Etiqueta (Clave, Pantalla, Descripcion)
+SELECT Clave, Pantalla, Descripcion
+FROM @Seed;
+
+INSERT INTO dbo.Traduccion (IdIdioma, IdEtiqueta, Texto)
+SELECT i.IdIdioma, e.IdEtiqueta, CASE i.Codigo WHEN N'es-AR' THEN s.Es ELSE s.En END
+FROM @Seed s
+JOIN dbo.Etiqueta e ON e.Clave = s.Clave
+JOIN dbo.Idioma i ON i.Codigo IN (N'es-AR', N'en-US');
 GO
 
 -- Inicializacion de DVH/DVV:

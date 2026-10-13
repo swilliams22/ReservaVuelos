@@ -50,6 +50,8 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Drawing" />
@@ -205,6 +207,9 @@
       <DependentUpon>AdminVuelos.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Start\BundleConfig.cs" />
+    <Compile Include="BasePage.cs">
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
     <Compile Include="About.aspx.cs">
       <DependentUpon>About.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -220,6 +225,7 @@
       <DependentUpon>Backup.aspx</DependentUpon>
     </Compile>
     <Compile Include="BE\Cliente.cs" />
+    <Compile Include="BE\Idioma.cs" />
     <Compile Include="BE\ConfiguracionSistema.cs" />
     <Compile Include="BE\IntegridadError.cs" />
     <Compile Include="BE\IntegrityValidationResult.cs" />
@@ -228,9 +234,11 @@
     <Compile Include="BE\ReservaDetalle.cs" />
     <Compile Include="BE\ReservaPasajero.cs" />
     <Compile Include="BLL\ClienteBLL.cs" />
+    <Compile Include="BLL\IdiomaBLL.cs" />
     <Compile Include="BLL\PasajeroBLL.cs" />
     <Compile Include="BLL\ReservaCabeceraV2BLL.cs" />
     <Compile Include="DAL\ClienteDAL.cs" />
+    <Compile Include="DAL\IdiomaDAL.cs" />
     <Compile Include="DAL\PasajeroDAL.cs" />
     <Compile Include="DAL\ReservaCabeceraDAL.cs" />
     <Compile Include="DAL\ReservaDetalleDAL.cs" />
@@ -336,10 +344,14 @@
     </Compile>
     <Compile Include="Servicios\EncryptionService.cs" />
     <Compile Include="Servicios\HashService.cs" />
+    <Compile Include="Servicios\IdiomaService.cs" />
+    <Compile Include="Servicios\IIdiomaObserver.cs" />
+    <Compile Include="Servicios\IIdiomaSubject.cs" />
     <Compile Include="Servicios\IntegrityService.cs" />
     <Compile Include="Servicios\PasswordPolicyService.cs" />
     <Compile Include="Servicios\SeguridadService.cs" />
     <Compile Include="Servicios\SesionService.cs" />
+    <Compile Include="Servicios\Traductor.cs" />
     <Compile Include="Site.Master.cs">
       <DependentUpon>Site.Master</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -382,6 +394,9 @@
     <None Include="Web.Release.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

@@ -44,5 +44,10 @@ namespace ReservaVuelos
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuLogin;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuRegistro;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuLogout;
+
+        /// <summary>
+        /// Selector de idioma (Observer: el cambio dispara IdiomaService.CambiarIdioma).
+        /// </summary>
+        protected global::System.Web.UI.WebControls.DropDownList ddlIdioma;
     }
 }
