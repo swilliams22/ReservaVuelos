@@ -310,7 +310,19 @@ VALUES
     (1, N'Steven', N'williams.steven@outlook.com',
      N'hS5OL3HiF0ZPkDWggjqR1p8hHBnSwacygi7+ZuVTU7o=',
      N'9uKmuNr6+7s+Kl5n6ojtGQ==',
-     N'Administrador', 1, CONVERT(DATETIME2(0), '2026-07-12T20:04:41'), 109);
+     N'Administrador', 1, CONVERT(DATETIME2(0), '2026-07-12T20:04:41'), 109),
+    (2, N'WebMaster', N'webmaster@aerolink.com',
+     N'N+bMUkYHvDQf9Ffq9RiXn8MW+7s0Fo4/E3jJmGIqCNo=',
+     N'hwvdf8ZZG4jR58osfvEGDg==',
+     N'WebMaster', 1, CONVERT(DATETIME2(0), '2026-10-15T15:00:00'), 0),
+    (3, N'Administrador', N'admin@aerolink.com',
+     N'sHr4ZyRUJeQmSTOxzkUDhbdlM1ZA7sRM/S2c5AwYoeg=',
+     N'kINAR2fylJmUxeG3nipXng==',
+     N'Administrador', 1, CONVERT(DATETIME2(0), '2026-10-15T15:00:00'), 0),
+    (4, N'Serenela', N'sere@gmail.com',
+     N'QfpeYJBLjv9B7EzyoBso71A91CCotfPbQaR+f+NtBqc=',
+     N'kkuy3Cq8kqQyZC3eD07+yA==',
+     N'Usuario', 1, CONVERT(DATETIME2(0), '2026-10-15T15:00:00'), 0);
 GO
 
 SET IDENTITY_INSERT dbo.Usuarios OFF;
@@ -497,6 +509,8 @@ GO
 
 -- Inicializacion de DVH/DVV:
 -- El usuario administrador se inserta con IdUsuario = 1 para conservar el DVH 109.
+-- Los usuarios de prueba (webmaster@aerolink.com, admin@aerolink.com, sere@gmail.com, clave Admin123*)
+-- y los vuelos se insertan con DVH = 0; la app los recalcula en el primer inicio.
 -- Los vuelos se insertan con DVH = 0 porque contienen fechas relativas a GETDATE().
 -- En el primer inicio de la aplicacion, IntegrityService detecta IntegridadDVV vacia,
 -- recalcula todos los DVH con el algoritmo centralizado de C# y carga los DVV.
