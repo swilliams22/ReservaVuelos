@@ -19,6 +19,7 @@ namespace ReservaVuelos
                 return;
             }
 
+            btnGuardar.Visible = AutorizacionService.TienePermiso(user, Permisos.EditarDatos);
             if (!IsPostBack)
             {
                 CargarDatos(user);
@@ -61,6 +62,7 @@ namespace ReservaVuelos
 
         protected void btnGuardar_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.EditarDatos);
             var user = SesionService.GetUser();
             if (user == null)
             {

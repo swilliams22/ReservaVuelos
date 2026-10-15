@@ -74,7 +74,7 @@
             </asp:TemplateField>
             <asp:TemplateField>
                 <ItemTemplate>
-                    <asp:Button runat="server" ID="btnBaja" CssClass="btn-grid" Text="Baja" CommandName="Baja" CommandArgument='<%# Eval("IdVuelo") %>' OnClientClick="return showConfirm('Confirma dar de baja este vuelo?', this);" />
+                    <asp:Button runat="server" ID="btnBaja" CssClass="btn-grid" Text="Baja" CommandName="Baja" CommandArgument='<%# Eval("IdVuelo") %>' Visible='<%# ReservaVuelos.Servicios.AutorizacionService.TienePermiso(ReservaVuelos.Servicios.SesionService.GetUser(), ReservaVuelos.Servicios.Permisos.BajaVuelo) %>' OnClientClick="return showConfirm('Confirma dar de baja este vuelo?', this);" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>

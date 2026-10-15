@@ -27,12 +27,14 @@ namespace ReservaVuelos
         protected void Page_Load(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (!SesionService.IsWebMaster(user))
+            if (!AutorizacionService.TienePermiso(user, Permisos.VerBackup))
             {
                 Response.Redirect("Login.aspx");
                 return;
             }
 
+            btnGenerarBackup.Visible = AutorizacionService.TienePermiso(user, Permisos.CrearBackup);
+            btnRestaurarBackup.Visible = AutorizacionService.TienePermiso(user, Permisos.RestaurarBackup);
             if (!IsPostBack)
             {
                 LimpiarResultadoBackup();
@@ -43,8 +45,9 @@ namespace ReservaVuelos
 
         protected void btnGenerarBackup_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.CrearBackup);
             var user = SesionService.GetUser();
-            if (!SesionService.IsWebMaster(user))
+            if (!AutorizacionService.TienePermiso(user, Permisos.VerBackup))
             {
                 Response.Redirect("Login.aspx");
                 return;
@@ -146,11 +149,13 @@ namespace ReservaVuelos
 
         protected void btnActualizarListaBackups_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.VerBackup);
             CargarBackupsDisponibles();
         }
 
         protected void gvBackupsDisponibles_RowCommand(object sender, System.Web.UI.WebControls.GridViewCommandEventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.VerBackup);
             if (e.CommandName != "SeleccionarBackup") return;
 
             var ruta = e.CommandArgument == null ? string.Empty : e.CommandArgument.ToString();
@@ -162,8 +167,9 @@ namespace ReservaVuelos
 
         protected void btnRestaurarBackup_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.RestaurarBackup);
             var user = SesionService.GetUser();
-            if (!SesionService.IsWebMaster(user))
+            if (!AutorizacionService.TienePermiso(user, Permisos.VerBackup))
             {
                 Response.Redirect("Login.aspx");
                 return;

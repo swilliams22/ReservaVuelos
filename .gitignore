@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Entrega local: backups y datos de acceso no se publican.
+/base/*.bak
+/base/*.bak.sha256
+/base/INFO_ENTREGA.md
+/base/local/

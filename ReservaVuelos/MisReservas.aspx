@@ -48,7 +48,7 @@
                     <asp:Button runat="server" ID="btnCancelar" CssClass="btn-cancel" Text="Cancelar Reserva" 
                         CommandName="Cancelar" CommandArgument='<%# Eval("IdReservaCabecera") %>' 
                         OnClientClick="return confirm('¿Confirma cancelar esta reserva?');"
-                        Visible='<%# Eval("Estado").ToString() == "Activa" %>' />
+                        Visible='<%# Eval("Estado").ToString() == "Activa" && ReservaVuelos.Servicios.AutorizacionService.TienePermiso(ReservaVuelos.Servicios.SesionService.GetUser(), ReservaVuelos.Servicios.Permisos.CancelarReserva) %>' />
                 </div>
             </div>
         </ItemTemplate>

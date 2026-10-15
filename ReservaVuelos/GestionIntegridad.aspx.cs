@@ -10,17 +10,21 @@ namespace ReservaVuelos
         protected void Page_Load(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (!SesionService.IsWebMaster(user))
+            if (!AutorizacionService.TienePermiso(user, Permisos.VerIntegridad))
             {
                 Response.Redirect("Login.aspx");
                 return;
             }
 
+            btnValidar.Visible = AutorizacionService.TienePermiso(user, Permisos.ValidarIntegridad);
+            btnResolver.Visible = AutorizacionService.TienePermiso(user, Permisos.ResolverIntegridad);
+            btnRecalcular.Visible = AutorizacionService.TienePermiso(user, Permisos.RecalcularIntegridad);
             if (!IsPostBack) Cargar();
         }
 
         protected void btnValidar_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.ValidarIntegridad);
             var result = _integrity.ValidateAllAndPersist();
             lblMsg.ForeColor = result.IsValid ? System.Drawing.Color.Green : System.Drawing.Color.Red;
             lblMsg.Text = result.IsValid ? "Validación correcta." : "Se detectaron inconsistencias. El modo de contingencia permanece activo.";
@@ -29,6 +33,7 @@ namespace ReservaVuelos
 
         protected void btnResolver_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.ResolverIntegridad);
             var user = SesionService.GetUser();
             var result = _integrity.TryResolveAfterValidation(user != null ? (int?)user.IdUsuario : null, "Validación completa correcta");
             lblMsg.ForeColor = result.IsValid ? System.Drawing.Color.Green : System.Drawing.Color.Red;
@@ -38,6 +43,7 @@ namespace ReservaVuelos
 
         protected void btnRecalcular_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.RecalcularIntegridad);
             var user = SesionService.GetUser();
             try
             {

@@ -1,4 +1,4 @@
-﻿using ReservaVuelos.BE;
+using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
@@ -22,11 +22,13 @@ namespace ReservaVuelos
         protected void Page_Load(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (!SesionService.IsWebMaster(user))
+            if (!AutorizacionService.TienePermiso(user, Permisos.VerIdiomas))
             {
                 Response.Redirect("Login.aspx");
                 return;
             }
+            btnCrear.Visible = AutorizacionService.TienePermiso(user, Permisos.EditarIdiomas);
+            btnGuardar.Visible = AutorizacionService.TienePermiso(user, Permisos.EditarIdiomas);
             if (!IsPostBack)
                 CargarIdiomas();
         }
@@ -60,12 +62,15 @@ namespace ReservaVuelos
             btnEditar.CommandArgument = id;
             btnActivar.CommandArgument = id;
             btnDesactivar.CommandArgument = id;
-            btnActivar.Visible = !idioma.Activo;
-            btnDesactivar.Visible = idioma.Activo && !idioma.EsDefault;
+            bool puedeEditar = AutorizacionService.TienePermiso(SesionService.GetUser(), Permisos.EditarIdiomas);
+            btnEditar.Visible = puedeEditar;
+            btnActivar.Visible = puedeEditar && !idioma.Activo;
+            btnDesactivar.Visible = puedeEditar && idioma.Activo && !idioma.EsDefault;
         }
 
         protected void gvIdiomas_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.EditarIdiomas);
             int idIdioma;
             if (!int.TryParse(Convert.ToString(e.CommandArgument), out idIdioma)) return;
 
@@ -106,6 +111,7 @@ namespace ReservaVuelos
 
         protected void btnCrear_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.EditarIdiomas);
             lblMsg.Text = "";
             try
             {
@@ -172,6 +178,7 @@ namespace ReservaVuelos
 
         protected void btnGuardar_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.EditarIdiomas);
             lblMsg.Text = "";
             var idioma = IdiomaEnEdicion();
             if (idioma == null) return;

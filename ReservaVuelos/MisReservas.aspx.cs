@@ -132,6 +132,7 @@ namespace ReservaVuelos
 
         protected void rptReservas_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.CancelarReserva);
             if (e.CommandName == "Cancelar")
             {
                 int idReservaCabecera = Convert.ToInt32(e.CommandArgument);

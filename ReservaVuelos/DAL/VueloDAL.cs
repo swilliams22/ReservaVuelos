@@ -15,8 +15,8 @@ namespace ReservaVuelos.DAL
             {
                 var sql = @"SELECT *
 FROM Vuelos
-WHERE (@Origen IS NULL OR Origen LIKE @OrigenLike)
-  AND (@Destino IS NULL OR Destino LIKE @DestinoLike)
+WHERE (@Origen IS NULL OR Origen COLLATE Latin1_General_100_CI_AI LIKE @OrigenLike)
+  AND (@Destino IS NULL OR Destino COLLATE Latin1_General_100_CI_AI LIKE @DestinoLike)
   AND (@Fecha IS NULL OR FechaSalida = @Fecha)
   AND (@FechaMinima IS NULL OR FechaSalida > @FechaMinima)";
 

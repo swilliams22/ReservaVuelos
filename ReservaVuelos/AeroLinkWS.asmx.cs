@@ -73,8 +73,8 @@ namespace ReservaVuelos
 
         private class DatosToken
         {
+            public int IdUsuario;
             public string Email;
-            public string Rol;
             public DateTime Vence;
         }
 
@@ -94,7 +94,7 @@ namespace ReservaVuelos
 
                 var token = Guid.NewGuid().ToString("N");
                 LimpiarVencidos();
-                _tokens[token] = new DatosToken { Email = usuario.Email, Rol = usuario.Rol, Vence = DateTime.Now.AddMinutes(MINUTOS_TOKEN) };
+                _tokens[token] = new DatosToken { IdUsuario = usuario.IdUsuario, Email = usuario.Email, Vence = DateTime.Now.AddMinutes(MINUTOS_TOKEN) };
 
                 return new ResultadoLogin
                 {
@@ -154,7 +154,7 @@ namespace ReservaVuelos
         [WebMethod(Description = "Informe de vuelos en XML. Filtro: Todos, Activos o Baja. Requiere el token de un Administrador.")]
         public string ObtenerInformeVuelosXml(string token, string filtro)
         {
-            var datos = ExigirAdministrador(token);
+            var datos = ExigirPermiso(token, Permisos.ExportarVuelos);
 
             var estado = string.IsNullOrWhiteSpace(filtro) ? "Activos" : filtro.Trim();
             var lista = new VueloBLL().Search(null, null, null, estado);
@@ -167,7 +167,7 @@ namespace ReservaVuelos
         [WebMethod(Description = "Importa vuelos desde un XML (mismo formato que el informe). Requiere el token de un Administrador.")]
         public ResultadoImportacionWS ImportarVuelosXml(string token, string xml)
         {
-            var datos = ExigirAdministrador(token);
+            var datos = ExigirPermiso(token, Permisos.ImportarVuelos);
 
             if (string.IsNullOrWhiteSpace(xml))
                 return new ResultadoImportacionWS { Exitoso = false, Mensaje = "El XML está vacío.", Rechazados = new string[0] };
@@ -201,14 +201,18 @@ namespace ReservaVuelos
 
         // ---------- Auxiliares ----------
 
-        private static DatosToken ExigirAdministrador(string token)
+        private static DatosToken ExigirPermiso(string token, string permiso)
         {
             DatosToken datos;
             if (string.IsNullOrEmpty(token) || !_tokens.TryGetValue(token, out datos) || datos.Vence < DateTime.Now)
                 throw new SoapException("Token inválido o vencido. Inicie sesión nuevamente.", SoapException.ClientFaultCode);
 
-            if (!string.Equals(datos.Rol, "Administrador", StringComparison.OrdinalIgnoreCase))
-                throw new SoapException("La operación requiere rol Administrador.", SoapException.ClientFaultCode);
+            // El token identifica al usuario; el rol y el estado se consultan nuevamente.
+            var usuario = new UsuarioBLL().GetByEmail(datos.Email);
+            if (usuario == null || usuario.IdUsuario != datos.IdUsuario || !usuario.Activo || !AutorizacionService.TienePermiso(usuario, permiso))
+                throw new SoapException("No tiene permiso para esta operación.", SoapException.ClientFaultCode);
+            if (new IntegrityService().IsContingencyMode())
+                throw new SoapException("Operación no disponible durante contingencia.", SoapException.ClientFaultCode);
 
             datos.Vence = DateTime.Now.AddMinutes(MINUTOS_TOKEN);
             return datos;

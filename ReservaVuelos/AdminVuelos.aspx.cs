@@ -1,4 +1,4 @@
-﻿using ReservaVuelos.BE;
+using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
@@ -15,11 +15,15 @@ namespace ReservaVuelos
         protected void Page_Load(object sender, EventArgs e)
         {
             var user = SesionService.GetUser();
-            if (!SesionService.IsAdministrator(user))
+            if (!AutorizacionService.TienePermiso(user, Permisos.VerVuelos))
             {
                 Response.Redirect("Login.aspx");
                 return;
             }
+
+            btnCrear.Visible = AutorizacionService.TienePermiso(user, Permisos.CrearVuelo);
+            btnExportar.Visible = AutorizacionService.TienePermiso(user, Permisos.ExportarVuelos);
+            btnImportar.Visible = AutorizacionService.TienePermiso(user, Permisos.ImportarVuelos);
 
             // asociar datalist a textboxes para sugerencias
             txtOrigen.Attributes["list"] = "listaCiudades";
@@ -34,6 +38,7 @@ namespace ReservaVuelos
 
         protected void gvVuelosAdmin_RowCommand(object sender, System.Web.UI.WebControls.GridViewCommandEventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.BajaVuelo);
             if (e.CommandName == "Baja")
             {
                 int id = Convert.ToInt32(e.CommandArgument);
@@ -80,6 +85,7 @@ namespace ReservaVuelos
 
         protected void btnCrear_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.CrearVuelo);
             try
             {
                 var v = new Vuelo
@@ -107,6 +113,7 @@ namespace ReservaVuelos
 
         protected void btnExportar_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.ExportarVuelos);
             lblXmlResultado.ForeColor = System.Drawing.Color.Red;
             var token = SesionService.GetTokenServicio();
             if (string.IsNullOrEmpty(token))
@@ -138,6 +145,7 @@ namespace ReservaVuelos
 
         protected void btnImportar_Click(object sender, EventArgs e)
         {
+            AutorizacionService.Exigir(Permisos.ImportarVuelos);
             lblXmlResultado.ForeColor = System.Drawing.Color.Red;
             if (!fuXml.HasFile)
             {

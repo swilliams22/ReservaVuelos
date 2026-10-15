@@ -45,6 +45,12 @@ La solución ya no trabaja con una tabla única de reservas. El flujo vigente us
 
 ## Base de datos
 
+La entrega incluye un [script de actualización](base/ActualizarBD_2026-10-15.sql)
+y las [instrucciones de instalación](base/README.md). El script publicado actualiza
+el esquema y conserva las cuentas, contraseñas y datos existentes.
+El backup completo, sus instrucciones de acceso y la migración con el alta inicial
+de la cuenta técnica se conservan como archivos locales excluidos de Git.
+
 El script principal está en:
 
 - `ReservaVuelos/SQL/ReservaVuelos.sql`
@@ -89,3 +95,77 @@ La aplicación quedó configurada en `es-AR` y UTF-8 en `Web.config`. El idioma 
 ## Estado del proyecto
 
 El flujo de reservas quedó alineado con el modelo `ReservaCabecera` / `ReservaDetalle` / `ReservaPasajero`, sin dependencia del modelo legacy eliminado del código.
+
+## Roles y permisos (Composite)
+
+La autorización usa `PermisoComponente`, `PermisoSimple` (hoja) y `GrupoPermisos`
+(compuesto). `TienePermiso` recorre los grupos y sólo las hojas conceden acciones.
+El catálogo vive en `Permisos` y sus relaciones en `PermisoRelacion`.
+Se conserva un rol por usuario en `Usuarios.Rol`; ese código selecciona el grupo raíz.
+No se modificó el cálculo de DVH/DVV de Usuarios.
+
+| Grupo raíz | Grupos incluidos | Acceso inicial |
+| --- | --- | --- |
+| Usuario | OperacionesUsuario | Crear reservas, ver/cancelar las propias y ver/editar datos propios. |
+| Administrador | OperacionesUsuario, GestionVuelos | Lo anterior más consultar, crear, dar de baja, importar y exportar vuelos. |
+| WebMaster | OperacionesUsuario, GestionTecnica | Operaciones de usuario más integridad, backups, restauración, bitácora e idiomas. |
+
+WebMaster y Administrador son independientes. El registro público siempre crea
+usuarios con rol Usuario, incluso si el objeto recibido propone otro rol.
+
+### Control de páginas y acciones
+
+`Global.Application_PreRequestHandlerExecute` ejecuta `AutorizacionService` después
+de adquirir la sesión y antes del ciclo de vida de la página. Consulta nuevamente
+el usuario para aplicar cambios de rol o desactivación en la siguiente petición.
+El árbol de permisos se conserva únicamente durante esa petición.
+
+`PoliticaPaginas` declara cada ruta física de Page. Esto cubre URLs `.aspx`, URLs
+amigables y postbacks, aunque se escriba el enlace manualmente. Una página nueva
+sin política se deniega por defecto. Una persona sin sesión se redirige al login;
+una persona autenticada sin permiso recibe HTTP 403. No hay retorno arbitrario a
+una URL proporcionada por el cliente.
+
+Cada acción sensible exige además su permiso (`AutorizacionService.Exigir`) antes
+de ejecutarse. El menú y los botones reflejan los permisos, pero la decisión de
+seguridad siempre está en el servidor. Se mantiene también el bloqueo por
+contingencia antes de ejecutar las acciones de las páginas.
+
+Las operaciones SOAP de importar/exportar exigen el permiso correspondiente:
+el token identifica al usuario, pero se vuelve a consultar su ID, rol y estado.
+La búsqueda y el cálculo de precio continúan públicos, como en el diseño anterior.
+
+La cancelación valida dentro de la transacción que el usuario sea el titular o
+un pasajero vinculado de la reserva, conservando el alcance de `MisReservas`.
+Ni el rol Administrador ni WebMaster habilitan cancelar reservas ajenas.
+
+### Instalación y configuración
+
+En una base existente ejecutar **sólo**
+`ReservaVuelos/SQL/MigracionPermisosComposite.sql`. Es aditiva, se puede repetir y
+no cambia usuarios ni reservas. Para una instalación nueva, el script principal
+ya incorpora el mismo esquema. **El script principal recrea la base completa.**
+
+Las relaciones se administran actualmente mediante SQL; no hay una pantalla de
+administración de permisos ni asignaciones múltiples por usuario. Los triggers
+rechazan ciclos, hojas con hijos y cambios de tipo incompatibles. La aplicación
+también rechaza ciclos al construir el Composite. La migración repetida conserva
+la configuración existente. Los permisos de lectura y de acción son separados:
+para usar una acción dentro de una página se necesitan ambos.
+
+Las nuevas tablas del catálogo no se agregaron al mecanismo DVH/DVV: su edición
+debe quedar restringida a la administración de SQL Server. Cambiar `Usuarios.Rol`
+continúa sujeto al control de integridad existente y requiere el procedimiento de
+recalcular/verificar documentado para los roles.
+
+### Verificación
+
+Compilar la solución con MSBuild y ejecutar `tests/Test-Autorizacion.ps1` desde
+PowerShell (opcionalmente `-Servidor nombreInstancia`). Necesita SQL Server local
+y permiso para crear una base temporal. El script usa una base exclusiva de
+prueba, ejecuta pruebas de Composite, matriz de roles, páginas, acciones, sesión,
+SOAP, pertenencia de reservas y ciclos SQL; la elimina al finalizar.
+
+Para agregar una página: declararla en `PoliticaPaginas`, definir sus hojas en
+`Permisos` y en SQL, exigir el permiso antes de cada acción sensible y actualizar
+las pruebas de la matriz de acceso. El menú por sí solo no concede acceso.

@@ -47,6 +47,8 @@ namespace ReservaVuelos.Servicios
 
         public int RegistrarUsuario(Usuario u, string password)
         {
+            // El registro público nunca puede conceder un rol privilegiado.
+            u.Rol = "Usuario";
             new IntegrityService().EnsureAllTablesAreValid();
 
             string hash, salt;

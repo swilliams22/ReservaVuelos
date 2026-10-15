@@ -192,6 +192,8 @@ ORDER BY rc.FechaReserva DESC", cn))
 
         public int Cancel(int idReservaCabecera, int? idUsuarioCancela)
         {
+            if (!idUsuarioCancela.HasValue)
+                throw new System.Web.HttpException(403, "Debe identificarse para cancelar una reserva.");
             using (var cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
@@ -200,9 +202,16 @@ ORDER BY rc.FechaReserva DESC", cn))
                     try
                     {
                         string estado = null;
-                        using (var cmdGet = new SqlCommand("SELECT Estado FROM ReservaCabecera WITH (UPDLOCK, ROWLOCK) WHERE IdReservaCabecera = @Id", cn, tran))
+                        // Validación de pertenencia en la misma transacción que cancela.
+                        // Se conserva el acceso de titular o pasajero vinculado de MisReservas.
+                        using (var cmdGet = new SqlCommand(@"SELECT rc.Estado FROM ReservaCabecera rc WITH (UPDLOCK, ROWLOCK)
+WHERE rc.IdReservaCabecera = @Id AND (
+ EXISTS (SELECT 1 FROM Clientes c WHERE c.IdCliente=rc.IdCliente AND c.IdUsuario=@Usuario)
+ OR EXISTS (SELECT 1 FROM ReservaPasajero rp JOIN Pasajeros p ON p.IdPasajero=rp.IdPasajero
+            WHERE rp.IdReservaCabecera=rc.IdReservaCabecera AND p.IdUsuario=@Usuario))", cn, tran))
                         {
                             cmdGet.Parameters.AddWithValue("@Id", idReservaCabecera);
+                            cmdGet.Parameters.AddWithValue("@Usuario", idUsuarioCancela.Value);
                             var result = cmdGet.ExecuteScalar();
                             if (result == null)
                             {

@@ -12,6 +12,24 @@ namespace ReservaVuelos
 {
     public class Global : HttpApplication
     {
+        void Application_PreRequestHandlerExecute(object sender, EventArgs e)
+        {
+            AutorizacionService.ControlarPeticion(Context);
+        }
+
+        void Application_Error(object sender, EventArgs e)
+        {
+            var error = Server.GetLastError() as HttpException;
+            if (error == null || error.GetHttpCode() != 403) return;
+            Server.ClearError();
+            Response.Clear();
+            Response.StatusCode = 403;
+            Response.TrySkipIisCustomErrors = true;
+            Response.ContentType = "text/plain; charset=utf-8";
+            Response.Write("Acceso denegado. No tiene permiso para acceder a esta página o ejecutar esta acción.");
+            CompleteRequest();
+        }
+
         void Application_Start(object sender, EventArgs e)
         {
             // Código que se ejecuta al iniciar la aplicación

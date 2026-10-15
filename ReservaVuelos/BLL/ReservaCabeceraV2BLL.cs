@@ -17,6 +17,11 @@ namespace ReservaVuelos.BLL
 
         public int CreateWithDetails(int idCliente, List<ReservaDetalle> detalles, List<Pasajero> pasajeros, Usuario usuarioActual)
         {
+            AutorizacionService.Exigir(Permisos.Reservar);
+            var clienteActual = new ClienteDAL().GetByIdUsuario(usuarioActual == null ? 0 : usuarioActual.IdUsuario);
+            if (clienteActual == null || clienteActual.IdCliente != idCliente ||
+                SesionService.GetUser().IdUsuario != usuarioActual.IdUsuario)
+                throw new System.Web.HttpException(403, "Sólo puede crear reservas para su propio cliente.");
             if (idCliente <= 0)
                 throw new ArgumentException("El ID del cliente es requerido.");
             if (detalles == null || detalles.Count == 0)
@@ -112,6 +117,9 @@ namespace ReservaVuelos.BLL
 
         public bool Cancel(int idReservaCabecera, Usuario usuarioActual)
         {
+            AutorizacionService.Exigir(Permisos.CancelarReserva);
+            if (usuarioActual == null || usuarioActual.IdUsuario != SesionService.GetUser().IdUsuario)
+                throw new System.Web.HttpException(403, "Usuario inválido para cancelar la reserva.");
             try
             {
                 var integrity = new IntegrityService();

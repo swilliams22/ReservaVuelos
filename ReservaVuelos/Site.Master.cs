@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -91,16 +91,16 @@ namespace ReservaVuelos
                 return;
             }
 
-            if (menuMisReservas != null) menuMisReservas.Visible = user != null;
-            if (menuMisDatos != null) menuMisDatos.Visible = user != null;
+            if (menuMisReservas != null) menuMisReservas.Visible = AutorizacionService.TienePermiso(user, Permisos.VerReservas);
+            if (menuMisDatos != null) menuMisDatos.Visible = AutorizacionService.TienePermiso(user, Permisos.VerDatos);
             if (menuLogin != null) menuLogin.Visible = user == null;
             if (menuRegistro != null) menuRegistro.Visible = user == null;
             if (menuLogout != null) menuLogout.Visible = user != null;
-            if (menuAdmin != null) menuAdmin.Visible = SesionService.IsAdministrator(user);
-            if (menuIntegridad != null) menuIntegridad.Visible = SesionService.IsWebMaster(user);
-            if (menuBackup != null) menuBackup.Visible = SesionService.IsWebMaster(user);
-            if (menuBitacora != null) menuBitacora.Visible = SesionService.IsWebMaster(user);
-            if (menuIdiomas != null) menuIdiomas.Visible = SesionService.IsWebMaster(user);
+            if (menuAdmin != null) menuAdmin.Visible = AutorizacionService.TienePermiso(user, Permisos.VerVuelos);
+            if (menuIntegridad != null) menuIntegridad.Visible = AutorizacionService.TienePermiso(user, Permisos.VerIntegridad);
+            if (menuBackup != null) menuBackup.Visible = AutorizacionService.TienePermiso(user, Permisos.VerBackup);
+            if (menuBitacora != null) menuBitacora.Visible = AutorizacionService.TienePermiso(user, Permisos.VerBitacora);
+            if (menuIdiomas != null) menuIdiomas.Visible = AutorizacionService.TienePermiso(user, Permisos.VerIdiomas);
         }
     }
 }
