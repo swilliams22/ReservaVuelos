@@ -67,9 +67,7 @@ BEGIN
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'GestionTecnica' AND h.Codigo=N'Idiomas.Ver';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'GestionTecnica' AND h.Codigo=N'Idiomas.Editar';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'Usuario' AND h.Codigo=N'OperacionesUsuario';
- INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'Administrador' AND h.Codigo=N'OperacionesUsuario';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'Administrador' AND h.Codigo=N'GestionVuelos';
- INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'WebMaster' AND h.Codigo=N'OperacionesUsuario';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'WebMaster' AND h.Codigo=N'GestionTecnica';
 END;
 COMMIT;

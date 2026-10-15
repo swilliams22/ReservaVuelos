@@ -87,11 +87,20 @@ BEGIN
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'GestionTecnica' AND h.Codigo=N'Idiomas.Ver';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'GestionTecnica' AND h.Codigo=N'Idiomas.Editar';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'Usuario' AND h.Codigo=N'OperacionesUsuario';
- INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'Administrador' AND h.Codigo=N'OperacionesUsuario';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'Administrador' AND h.Codigo=N'GestionVuelos';
- INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'WebMaster' AND h.Codigo=N'OperacionesUsuario';
  INSERT dbo.PermisoRelacion(IdPadre, IdHijo) SELECT p.IdPermiso, h.IdPermiso FROM dbo.Permisos p CROSS JOIN dbo.Permisos h WHERE p.Codigo=N'WebMaster' AND h.Codigo=N'GestionTecnica';
 END;
+COMMIT;
+GO
+BEGIN TRANSACTION;
+-- Administrador y WebMaster no operan como clientes: se quita OperacionesUsuario de esos roles.
+-- Idempotente: en una base nueva no hay nada que borrar; en una existente aplica el cambio.
+DELETE r
+FROM dbo.PermisoRelacion r
+JOIN dbo.Permisos p ON p.IdPermiso = r.IdPadre
+JOIN dbo.Permisos h ON h.IdPermiso = r.IdHijo
+WHERE p.Codigo IN (N'Administrador', N'WebMaster')
+  AND h.Codigo = N'OperacionesUsuario';
 COMMIT;
 GO
 CREATE OR ALTER TRIGGER dbo.TR_PermisoRelacion_Validar
