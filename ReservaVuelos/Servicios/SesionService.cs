@@ -17,9 +17,21 @@ namespace ReservaVuelos.Servicios
             return HttpContext.Current.Session["User"] as Usuario;
         }
 
+        // Token que entrega el web service al iniciar sesión; se envía en las operaciones restringidas.
+        public static void SetTokenServicio(string token)
+        {
+            HttpContext.Current.Session["WsToken"] = token;
+        }
+
+        public static string GetTokenServicio()
+        {
+            return HttpContext.Current.Session["WsToken"] as string;
+        }
+
         public static void Clear()
         {
             HttpContext.Current.Session.Remove("User");
+            HttpContext.Current.Session.Remove("WsToken");
         }
 
         public static bool IsAdministrator(Usuario user)

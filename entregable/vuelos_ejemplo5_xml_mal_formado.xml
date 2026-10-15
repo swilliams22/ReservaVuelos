@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vuelos>
+  <vuelo>
+    <origen>Buenos Aires</origen>
+    <destino>Salta</destino>
+    <fecha>2027-03-05</fecha>
+    <hora>08:30</hora>
+    <precio>110000.00</precio>
+    <cupos>100</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Córdoba</origen>
+    <destino>Rosario</destino>
+</vuelos>

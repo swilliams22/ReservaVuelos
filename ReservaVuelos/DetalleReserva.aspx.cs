@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
@@ -99,7 +99,22 @@ namespace ReservaVuelos
         private void ActualizarMontoTotal()
         {
             var cantidad = CantidadPasajerosDeclarada;
-            var total = VuelosSeleccionados.Sum(v => v.Precio * cantidad);
+            decimal total;
+            try
+            {
+                // El cálculo lo hace el web service (AeroLinkWS.CalcularPrecioReserva).
+                var ids = new AeroLinkServiceReference.ArrayOfInt();
+                ids.AddRange(VuelosSeleccionados.Select(v => v.IdVuelo));
+                var calculo = AeroLinkCliente.Llamar(c => c.CalcularPrecioReserva(ids, cantidad));
+                if (!calculo.Valido)
+                    throw new InvalidOperationException(calculo.Mensaje);
+                total = calculo.Total;
+            }
+            catch (Exception)
+            {
+                // Si el servicio no responde, la pantalla sigue funcionando con el cálculo local.
+                total = VuelosSeleccionados.Sum(v => v.Precio * cantidad);
+            }
             lblMontoTotal.Text = total.ToString("C");
         }
 

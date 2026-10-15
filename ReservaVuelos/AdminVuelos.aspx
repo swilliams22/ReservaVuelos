@@ -21,6 +21,17 @@
         <asp:ListItem Value="Baja">Dados de baja</asp:ListItem>
     </asp:DropDownList>
 
+    <h3>XML</h3>
+    <div class="filter-row">
+        <asp:Button ID="btnExportar" runat="server" Text="Exportar vuelos a XML" OnClick="btnExportar_Click" CssClass="btn-grid" CausesValidation="false" />
+        (exporta los vuelos según el filtro elegido)
+    </div>
+    <div class="filter-row">
+        <asp:FileUpload ID="fuXml" runat="server" accept=".xml" />
+        <asp:Button ID="btnImportar" runat="server" Text="Importar vuelos desde XML" OnClick="btnImportar_Click" CssClass="btn-grid" OnClientClick="return showConfirm('Confirma importar los vuelos del archivo XML?', this);" />
+    </div>
+    <asp:Label ID="lblXmlResultado" runat="server"></asp:Label>
+
     <!-- Datalists para sugerencias de origen/destino -->
     <datalist id="listaCiudades">
         <option value="Buenos Aires"></option>

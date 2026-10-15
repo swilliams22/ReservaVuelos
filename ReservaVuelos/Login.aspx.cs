@@ -1,4 +1,5 @@
 ﻿using ReservaVuelos.BE;
+using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
 
@@ -29,11 +30,14 @@ namespace ReservaVuelos
             var pwd = txtPassword.Text;
             try
             {
-                var srv = new SeguridadService();
-                var user = srv.Authenticate(email, pwd);
-                if (user != null)
+                // La validación de credenciales la hace el web service (AeroLinkWS.Login).
+                var resultado = AeroLinkCliente.Llamar(c => c.Login(email, pwd));
+                if (resultado.Exitoso)
                 {
+                    // El servicio solo devuelve datos básicos y el token: el usuario completo se carga acá para la sesión.
+                    var user = new UsuarioBLL().GetByEmail(resultado.Email);
                     SesionService.SetUser(user);
+                    SesionService.SetTokenServicio(resultado.Token);
                     IdiomaService.Instancia.AplicarPreferenciaDeUsuario(user);
                     var integrity = new IntegrityService();
                     integrity.ValidateAllAndPersist();
@@ -44,9 +48,15 @@ namespace ReservaVuelos
                     }
                     Response.Redirect("Default.aspx");
                 }
-                else
+                else if (resultado.Codigo == "CREDENCIALES")
                 {
                     lblMsg.Text = T("login.msg.credencialesInvalidas");
+                }
+                else
+                {
+                    var integrity = new IntegrityService();
+                    if (integrity.RedirectIfContingencyActive(SesionService.GetUser())) return;
+                    lblMsg.Text = T("login.msg.errorIniciarSesion") + ": " + resultado.Mensaje;
                 }
             }
             catch (Exception ex)

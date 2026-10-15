@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:tns="http://aerolink.reservavuelos/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" targetNamespace="http://aerolink.reservavuelos/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://aerolink.reservavuelos/">
+      <s:element name="Login">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="email" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="password" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="LoginResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="LoginResult" type="tns:ResultadoLogin" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ResultadoLogin">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Exitoso" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" name="Codigo" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Mensaje" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Token" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="IdUsuario" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Nombre" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Email" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="Rol" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="CalcularPrecioReserva">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="idsVuelo" type="tns:ArrayOfInt" />
+            <s:element minOccurs="1" maxOccurs="1" name="cantidadPasajeros" type="s:int" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ArrayOfInt">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="int" type="s:int" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="CalcularPrecioReservaResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="CalcularPrecioReservaResult" type="tns:CalculoReserva" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="CalculoReserva">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Valido" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" name="Mensaje" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="Total" type="s:decimal" />
+          <s:element minOccurs="0" maxOccurs="1" name="Lineas" type="tns:ArrayOfLineaCalculo" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfLineaCalculo">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="LineaCalculo" nillable="true" type="tns:LineaCalculo" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="LineaCalculo">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="IdVuelo" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Descripcion" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="PrecioUnitario" type="s:decimal" />
+          <s:element minOccurs="1" maxOccurs="1" name="Cantidad" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="Subtotal" type="s:decimal" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="ObtenerInformeVuelosXml">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="token" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="filtro" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ObtenerInformeVuelosXmlResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ObtenerInformeVuelosXmlResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ImportarVuelosXml">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="token" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="xml" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ImportarVuelosXmlResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="ImportarVuelosXmlResult" type="tns:ResultadoImportacionWS" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="ResultadoImportacionWS">
+        <s:sequence>
+          <s:element minOccurs="1" maxOccurs="1" name="Exitoso" type="s:boolean" />
+          <s:element minOccurs="0" maxOccurs="1" name="Mensaje" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="Total" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="Importados" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="Rechazados" type="tns:ArrayOfString" />
+        </s:sequence>
+      </s:complexType>
+      <s:complexType name="ArrayOfString">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="unbounded" name="string" nillable="true" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="LoginSoapIn">
+    <wsdl:part name="parameters" element="tns:Login" />
+  </wsdl:message>
+  <wsdl:message name="LoginSoapOut">
+    <wsdl:part name="parameters" element="tns:LoginResponse" />
+  </wsdl:message>
+  <wsdl:message name="CalcularPrecioReservaSoapIn">
+    <wsdl:part name="parameters" element="tns:CalcularPrecioReserva" />
+  </wsdl:message>
+  <wsdl:message name="CalcularPrecioReservaSoapOut">
+    <wsdl:part name="parameters" element="tns:CalcularPrecioReservaResponse" />
+  </wsdl:message>
+  <wsdl:message name="ObtenerInformeVuelosXmlSoapIn">
+    <wsdl:part name="parameters" element="tns:ObtenerInformeVuelosXml" />
+  </wsdl:message>
+  <wsdl:message name="ObtenerInformeVuelosXmlSoapOut">
+    <wsdl:part name="parameters" element="tns:ObtenerInformeVuelosXmlResponse" />
+  </wsdl:message>
+  <wsdl:message name="ImportarVuelosXmlSoapIn">
+    <wsdl:part name="parameters" element="tns:ImportarVuelosXml" />
+  </wsdl:message>
+  <wsdl:message name="ImportarVuelosXmlSoapOut">
+    <wsdl:part name="parameters" element="tns:ImportarVuelosXmlResponse" />
+  </wsdl:message>
+  <wsdl:portType name="AeroLinkWSSoap">
+    <wsdl:operation name="Login">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Valida el email y la contraseña. Si son correctos devuelve los datos básicos del usuario y un token.</wsdl:documentation>
+      <wsdl:input message="tns:LoginSoapIn" />
+      <wsdl:output message="tns:LoginSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="CalcularPrecioReserva">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Calcula el precio de una reserva: suma, para cada vuelo, el precio unitario por la cantidad de pasajeros.</wsdl:documentation>
+      <wsdl:input message="tns:CalcularPrecioReservaSoapIn" />
+      <wsdl:output message="tns:CalcularPrecioReservaSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ObtenerInformeVuelosXml">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Informe de vuelos en XML. Filtro: Todos, Activos o Baja. Requiere el token de un Administrador.</wsdl:documentation>
+      <wsdl:input message="tns:ObtenerInformeVuelosXmlSoapIn" />
+      <wsdl:output message="tns:ObtenerInformeVuelosXmlSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="ImportarVuelosXml">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Importa vuelos desde un XML (mismo formato que el informe). Requiere el token de un Administrador.</wsdl:documentation>
+      <wsdl:input message="tns:ImportarVuelosXmlSoapIn" />
+      <wsdl:output message="tns:ImportarVuelosXmlSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="AeroLinkWSSoap" type="tns:AeroLinkWSSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="Login">
+      <soap:operation soapAction="http://aerolink.reservavuelos/Login" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CalcularPrecioReserva">
+      <soap:operation soapAction="http://aerolink.reservavuelos/CalcularPrecioReserva" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ObtenerInformeVuelosXml">
+      <soap:operation soapAction="http://aerolink.reservavuelos/ObtenerInformeVuelosXml" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ImportarVuelosXml">
+      <soap:operation soapAction="http://aerolink.reservavuelos/ImportarVuelosXml" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:binding name="AeroLinkWSSoap12" type="tns:AeroLinkWSSoap">
+    <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="Login">
+      <soap12:operation soapAction="http://aerolink.reservavuelos/Login" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CalcularPrecioReserva">
+      <soap12:operation soapAction="http://aerolink.reservavuelos/CalcularPrecioReserva" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ObtenerInformeVuelosXml">
+      <soap12:operation soapAction="http://aerolink.reservavuelos/ObtenerInformeVuelosXml" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ImportarVuelosXml">
+      <soap12:operation soapAction="http://aerolink.reservavuelos/ImportarVuelosXml" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="AeroLinkWS">
+    <wsdl:port name="AeroLinkWSSoap" binding="tns:AeroLinkWSSoap">
+      <soap:address location="https://localhost:44352/AeroLinkWS.asmx" />
+    </wsdl:port>
+    <wsdl:port name="AeroLinkWSSoap12" binding="tns:AeroLinkWSSoap12">
+      <soap12:address location="https://localhost:44352/AeroLinkWS.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

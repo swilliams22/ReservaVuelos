@@ -1,8 +1,9 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
 using System.Globalization;
+using System.Text;
 
 namespace ReservaVuelos
 {
@@ -101,6 +102,88 @@ namespace ReservaVuelos
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                 lblMsg.Text = "Error: " + ex.Message;
+            }
+        }
+
+        protected void btnExportar_Click(object sender, EventArgs e)
+        {
+            lblXmlResultado.ForeColor = System.Drawing.Color.Red;
+            var token = SesionService.GetTokenServicio();
+            if (string.IsNullOrEmpty(token))
+            {
+                lblXmlResultado.Text = "Cierre sesión y vuelva a ingresar para usar el web service.";
+                return;
+            }
+
+            try
+            {
+                // El informe lo genera el web service (AeroLinkWS.ObtenerInformeVuelosXml), que también lo registra en la bitácora.
+                var filtro = ddlFiltro.SelectedValue;
+                var xml = AeroLinkCliente.Llamar(c => c.ObtenerInformeVuelosXml(token, filtro));
+
+                Response.Clear();
+                Response.ContentType = "application/xml";
+                Response.AddHeader("Content-Disposition", "attachment; filename=vuelos_" + DateTime.Now.ToString("yyyyMMdd_HHmm") + ".xml");
+                Response.BinaryWrite(new UTF8Encoding(false).GetBytes(xml));
+                Response.Flush();
+                Response.SuppressContent = true;   // evita que ASP.NET agregue el HTML de la página al final del archivo
+                Context.ApplicationInstance.CompleteRequest();
+            }
+            catch (Exception ex)
+            {
+                if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
+                lblXmlResultado.Text = Server.HtmlEncode("Error al exportar: " + ex.Message);
+            }
+        }
+
+        protected void btnImportar_Click(object sender, EventArgs e)
+        {
+            lblXmlResultado.ForeColor = System.Drawing.Color.Red;
+            if (!fuXml.HasFile)
+            {
+                lblXmlResultado.Text = "Seleccione un archivo XML.";
+                return;
+            }
+            if (fuXml.PostedFile.ContentLength > XmlVuelosService.MAX_BYTES)
+            {
+                lblXmlResultado.Text = "El archivo supera el máximo de " + (XmlVuelosService.MAX_BYTES / 1024) + " KB.";
+                return;
+            }
+            var token = SesionService.GetTokenServicio();
+            if (string.IsNullOrEmpty(token))
+            {
+                lblXmlResultado.Text = "Cierre sesión y vuelva a ingresar para usar el web service.";
+                return;
+            }
+
+            try
+            {
+                string xml;
+                using (var lector = new System.IO.StreamReader(fuXml.PostedFile.InputStream, Encoding.UTF8))
+                    xml = lector.ReadToEnd();
+
+                // La importación la hace el web service (AeroLinkWS.ImportarVuelosXml), que también la registra en la bitácora.
+                var r = AeroLinkCliente.Llamar(c => c.ImportarVuelosXml(token, xml));
+                if (!r.Exitoso)
+                {
+                    lblXmlResultado.Text = Server.HtmlEncode(r.Mensaje);
+                    return;
+                }
+
+                BindGrid();
+
+                var sb = new StringBuilder();
+                sb.Append(Server.HtmlEncode($"Vuelos en el archivo: {r.Total}. Importados: {r.Importados}. Rechazados: {r.Rechazados.Count}."));
+                foreach (var motivo in r.Rechazados)
+                    sb.Append("<br />").Append(Server.HtmlEncode(motivo));
+                lblXmlResultado.Text = sb.ToString();
+                lblXmlResultado.ForeColor = r.Rechazados.Count == 0 ? System.Drawing.Color.Green
+                    : r.Importados > 0 ? System.Drawing.Color.DarkOrange : System.Drawing.Color.Red;
+            }
+            catch (Exception ex)
+            {
+                if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
+                lblXmlResultado.Text = Server.HtmlEncode("Error al importar: " + ex.Message);
             }
         }
     }

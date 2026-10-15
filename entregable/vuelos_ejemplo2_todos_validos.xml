@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vuelos>
+  <vuelo>
+    <origen>Buenos Aires</origen>
+    <destino>Bariloche</destino>
+    <fecha>2027-01-10</fecha>
+    <hora>07:45</hora>
+    <precio>185000.00</precio>
+    <cupos>120</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Buenos Aires</origen>
+    <destino>Ushuaia</destino>
+    <fecha>2027-01-12</fecha>
+    <hora>10:20</hora>
+    <precio>240000.00</precio>
+    <cupos>90</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Mendoza</origen>
+    <destino>Córdoba</destino>
+    <fecha>2027-01-15</fecha>
+    <hora>16:00</hora>
+    <precio>89500.50</precio>
+    <cupos>70</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Rosario</origen>
+    <destino>Buenos Aires</destino>
+    <fecha>2027-01-18</fecha>
+    <hora>21:30</hora>
+    <precio>65000.00</precio>
+    <cupos>110</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Tucumán</origen>
+    <destino>Buenos Aires</destino>
+    <fecha>2027-01-20</fecha>
+    <hora>06:15</hora>
+    <precio>98000.00</precio>
+    <cupos>100</cupos>
+  </vuelo>
+</vuelos>

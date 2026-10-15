@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vuelo>
+  <origen>Buenos Aires</origen>
+  <destino>Mendoza</destino>
+  <fecha>2027-03-01</fecha>
+  <hora>08:00</hora>
+  <precio>120000.00</precio>
+  <cupos>100</cupos>
+</vuelo>

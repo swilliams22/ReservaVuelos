@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Archivo de prueba para "Importar vuelos desde XML" (AdminVuelos).
+     Los 3 primeros vuelos se importan; el cuarto se rechaza porque origen y destino son iguales.
+     Si las fechas ya pasaron, cambiarlas por fechas futuras. -->
+<vuelos>
+  <vuelo>
+    <origen>Buenos Aires</origen>
+    <destino>Mendoza</destino>
+    <fecha>2026-12-05</fecha>
+    <hora>08:30</hora>
+    <precio>120000.00</precio>
+    <cupos>150</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Córdoba</origen>
+    <destino>Bariloche</destino>
+    <fecha>2026-12-06</fecha>
+    <hora>14:15</hora>
+    <precio>98500.50</precio>
+    <cupos>80</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Rosario</origen>
+    <destino>Salta</destino>
+    <fecha>2026-12-07</fecha>
+    <hora>19:45</hora>
+    <precio>87000.00</precio>
+    <cupos>60</cupos>
+  </vuelo>
+  <vuelo>
+    <origen>Salta</origen>
+    <destino>Salta</destino>
+    <fecha>2026-12-08</fecha>
+    <hora>10:00</hora>
+    <precio>50000.00</precio>
+    <cupos>40</cupos>
+  </vuelo>
+</vuelos>

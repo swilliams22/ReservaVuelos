@@ -132,6 +132,7 @@
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
+    <Content Include="AeroLinkWS.asmx" />
     <Content Include="Login.aspx" />
     <Content Include="Logout.aspx" />
     <Content Include="MisReservas.aspx" />
@@ -361,6 +362,12 @@
     <Compile Include="Servicios\SeguridadService.cs" />
     <Compile Include="Servicios\SesionService.cs" />
     <Compile Include="Servicios\Traductor.cs" />
+    <Compile Include="Servicios\XmlVuelosService.cs" />
+    <Compile Include="Servicios\AeroLinkCliente.cs" />
+    <Compile Include="AeroLinkWS.asmx.cs">
+      <DependentUpon>AeroLinkWS.asmx</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Site.Master.cs">
       <DependentUpon>Site.Master</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -389,6 +396,25 @@
     <Compile Include="MisDatos.aspx.designer.cs">
       <DependentUpon>MisDatos.aspx</DependentUpon>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Connected Services\AeroLinkServiceReference\Reference.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Reference.svcmap</DependentUpon>
+    </Compile>
+    <None Include="Connected Services\AeroLinkServiceReference\AeroLinkWS.disco" />
+    <None Include="Connected Services\AeroLinkServiceReference\AeroLinkWS.wsdl" />
+    <None Include="Connected Services\AeroLinkServiceReference\configuration.svcinfo" />
+    <None Include="Connected Services\AeroLinkServiceReference\configuration91.svcinfo" />
+    <None Include="Connected Services\AeroLinkServiceReference\Reference.svcmap">
+      <Generator>WCF Proxy Generator</Generator>
+      <LastGenOutput>Reference.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+    <WCFMetadataStorage Include="Connected Services\AeroLinkServiceReference\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
