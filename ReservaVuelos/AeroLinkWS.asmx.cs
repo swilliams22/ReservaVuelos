@@ -12,12 +12,10 @@ using System.Web.Services.Protocols;
 
 namespace ReservaVuelos
 {
-    // ---------- Objetos que viajan en las respuestas del servicio ----------
-
     public class ResultadoLogin
     {
         public bool Exitoso { get; set; }
-        public string Codigo { get; set; }      // OK, CREDENCIALES, ERROR
+        public string Codigo { get; set; }      
         public string Mensaje { get; set; }
         public string Token { get; set; }       // se envía en las operaciones que lo requieren
         public int IdUsuario { get; set; }
