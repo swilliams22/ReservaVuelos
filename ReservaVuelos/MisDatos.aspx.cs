@@ -5,14 +5,19 @@ using System;
 
 namespace ReservaVuelos
 {
-    public partial class MisDatos : System.Web.UI.Page
+    public partial class MisDatos : BasePage
     {
+        protected override string ClaveTitulo
+        {
+            get { return "misdatos.titulo"; }
+        }
+
         private readonly ClienteBLL _clienteBLL = new ClienteBLL();
         private readonly PasajeroBLL _pasajeroBLL = new PasajeroBLL();
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (user == null)
             {
                 Response.Redirect("Login.aspx");
@@ -28,7 +33,7 @@ namespace ReservaVuelos
 
         private void CargarDatos(Usuario user)
         {
-            var cliente = _clienteBLL.GetByIdUsuario(user.IdUsuario);
+            Cliente cliente = _clienteBLL.GetByIdUsuario(user.IdUsuario);
             if (cliente != null)
             {
                 txtNombreCliente.Text = cliente.Nombre;
@@ -43,7 +48,7 @@ namespace ReservaVuelos
                 txtEmailCliente.Text = user.Email;
             }
 
-            var pasajero = _pasajeroBLL.GetByIdUsuario(user.IdUsuario);
+            Pasajero pasajero = _pasajeroBLL.GetByIdUsuario(user.IdUsuario);
             if (pasajero != null)
             {
                 txtNombrePasajero.Text = pasajero.Nombre;
@@ -63,7 +68,7 @@ namespace ReservaVuelos
         protected void btnGuardar_Click(object sender, EventArgs e)
         {
             AutorizacionService.Exigir(Permisos.EditarDatos);
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (user == null)
             {
                 Response.Redirect("Login.aspx");
@@ -76,20 +81,20 @@ namespace ReservaVuelos
                 GuardarPasajero(user);
 
                 lblMsg.ForeColor = System.Drawing.Color.Green;
-                lblMsg.Text = "Datos actualizados correctamente.";
+                lblMsg.Text = T("misdatos.msg.guardado");
                 CargarDatos(user);
             }
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = "Error al guardar datos: " + ex.Message;
+                lblMsg.Text = T("misdatos.msg.errorGuardar") + ": " + ex.Message;
             }
         }
 
         private void GuardarCliente(Usuario user)
         {
-            var cliente = _clienteBLL.GetByIdUsuario(user.IdUsuario);
+            Cliente cliente = _clienteBLL.GetByIdUsuario(user.IdUsuario);
             if (cliente == null)
             {
                 cliente = new Cliente
@@ -116,7 +121,7 @@ namespace ReservaVuelos
 
         private void GuardarPasajero(Usuario user)
         {
-            var pasajero = _pasajeroBLL.GetByIdUsuario(user.IdUsuario);
+            Pasajero pasajero = _pasajeroBLL.GetByIdUsuario(user.IdUsuario);
             DateTime fechaNacimiento;
             DateTime? fecha = null;
             if (DateTime.TryParse(txtFechaNacimientoPasajero.Text, out fechaNacimiento))
@@ -124,7 +129,7 @@ namespace ReservaVuelos
 
             if (pasajero == null)
             {
-                var documento = txtDocumentoPasajero.Text.Trim();
+                string documento = txtDocumentoPasajero.Text.Trim();
                 if (!string.IsNullOrWhiteSpace(documento))
                 {
                     pasajero = _pasajeroBLL.GetByDocumento(documento);

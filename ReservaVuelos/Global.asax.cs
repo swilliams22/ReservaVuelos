@@ -19,7 +19,7 @@ namespace ReservaVuelos
 
         void Application_Error(object sender, EventArgs e)
         {
-            var error = Server.GetLastError() as HttpException;
+            HttpException error = Server.GetLastError() as HttpException;
             if (error == null || error.GetHttpCode() != 403) return;
             Server.ClearError();
             Response.Clear();

@@ -18,7 +18,7 @@ namespace ReservaVuelos.BLL
         public int CreateWithDetails(int idCliente, List<ReservaDetalle> detalles, List<Pasajero> pasajeros, Usuario usuarioActual)
         {
             AutorizacionService.Exigir(Permisos.Reservar);
-            var clienteActual = new ClienteDAL().GetByIdUsuario(usuarioActual == null ? 0 : usuarioActual.IdUsuario);
+            Cliente clienteActual = new ClienteDAL().GetByIdUsuario(usuarioActual == null ? 0 : usuarioActual.IdUsuario);
             if (clienteActual == null || clienteActual.IdCliente != idCliente ||
                 SesionService.GetUser().IdUsuario != usuarioActual.IdUsuario)
                 throw new System.Web.HttpException(403, "Sólo puede crear reservas para su propio cliente.");
@@ -31,10 +31,10 @@ namespace ReservaVuelos.BLL
             if (usuarioActual == null)
                 throw new ArgumentException("El usuario actual es requerido.");
 
-            var integrity = new IntegrityService();
+            IntegrityService integrity = new IntegrityService();
             integrity.EnsureAllTablesAreValid();
 
-            foreach (var detalle in detalles)
+            foreach (ReservaDetalle detalle in detalles)
             {
                 if (detalle.Cantidad <= 0)
                     throw new ArgumentException("La cantidad de pasajeros debe ser mayor o igual a 1.");
@@ -47,7 +47,7 @@ namespace ReservaVuelos.BLL
             }
 
             decimal montoTotal = detalles.Sum(d => d.SubTotal);
-            var cabecera = new ReservaCabecera
+            ReservaCabecera cabecera = new ReservaCabecera
             {
                 IdCliente = idCliente,
                 IdUsuarioCreador = usuarioActual.IdUsuario,
@@ -57,7 +57,7 @@ namespace ReservaVuelos.BLL
                 FechaCreacion = DateTime.Now
             };
 
-            var reservaPasajeros = pasajeros.Select(p => new ReservaPasajero
+            List<ReservaPasajero> reservaPasajeros = pasajeros.Select(p => new ReservaPasajero
             {
                 IdPasajero = p.IdPasajero
             }).ToList();
@@ -122,10 +122,10 @@ namespace ReservaVuelos.BLL
                 throw new System.Web.HttpException(403, "Usuario inválido para cancelar la reserva.");
             try
             {
-                var integrity = new IntegrityService();
+                IntegrityService integrity = new IntegrityService();
                 integrity.EnsureAllTablesAreValid();
 
-                var rows = _dal.Cancel(idReservaCabecera, usuarioActual != null ? (int?)usuarioActual.IdUsuario : null);
+                int rows = _dal.Cancel(idReservaCabecera, usuarioActual != null ? (int?)usuarioActual.IdUsuario : null);
                 if (rows > 0)
                 {
                     _bitacoraBLL.Create(new BitacoraEntity

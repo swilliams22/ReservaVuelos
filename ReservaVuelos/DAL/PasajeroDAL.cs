@@ -10,15 +10,15 @@ namespace ReservaVuelos.DAL
         private readonly EncryptionService _encryptionService = new EncryptionService();
         public int Create(Pasajero p)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int id;
-                        using (var cmd = new SqlCommand(@"INSERT INTO Pasajeros (IdUsuario, Nombre, Apellido, Email, Documento, Nacionalidad, FechaNacimiento, FechaAlta, FechaActualizacion, DVH)
+                        using (SqlCommand cmd = new SqlCommand(@"INSERT INTO Pasajeros (IdUsuario, Nombre, Apellido, Email, Documento, Nacionalidad, FechaNacimiento, FechaAlta, FechaActualizacion, DVH)
 VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @FechaNacimiento, @FechaAlta, @FechaActualizacion, 0); SELECT SCOPE_IDENTITY();", cn, tran))
                         {
                             cmd.Parameters.AddWithValue("@IdUsuario", p.IdUsuario.HasValue ? (object)p.IdUsuario.Value : DBNull.Value);
@@ -48,12 +48,12 @@ VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @Fech
 
         public Pasajero GetById(int idPasajero)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE IdPasajero = @IdPasajero", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE IdPasajero = @IdPasajero", cn))
             {
                 cmd.Parameters.AddWithValue("@IdPasajero", idPasajero);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearPasajero(rdr);
@@ -65,12 +65,12 @@ VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @Fech
 
         public Pasajero GetByEmail(string email)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE Email = @Email", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE Email = @Email", cn))
             {
                 cmd.Parameters.AddWithValue("@Email", email);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearPasajero(rdr);
@@ -82,12 +82,12 @@ VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @Fech
 
         public Pasajero GetByDocumento(string documento)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE Documento = @Documento", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE Documento = @Documento", cn))
             {
                 cmd.Parameters.AddWithValue("@Documento", documento);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearPasajero(rdr);
@@ -99,12 +99,12 @@ VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @Fech
 
         public Pasajero GetByIdUsuario(int idUsuario)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE IdUsuario = @IdUsuario", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Pasajeros WHERE IdUsuario = @IdUsuario", cn))
             {
                 cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearPasajero(rdr);
@@ -116,8 +116,8 @@ VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @Fech
 
         public bool ExistsWithEmail(string email)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT COUNT(1) FROM Pasajeros WHERE Email = @Email", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT COUNT(1) FROM Pasajeros WHERE Email = @Email", cn))
             {
                 cmd.Parameters.AddWithValue("@Email", email);
                 cn.Open();
@@ -127,15 +127,15 @@ VALUES (@IdUsuario, @Nombre, @Apellido, @Email, @Documento, @Nacionalidad, @Fech
 
         public int Update(Pasajero p)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int rows;
-                        using (var cmd = new SqlCommand(@"UPDATE Pasajeros
+                        using (SqlCommand cmd = new SqlCommand(@"UPDATE Pasajeros
 SET Nombre = @Nombre,
     Apellido = @Apellido,
     Email = @Email,
@@ -171,15 +171,15 @@ WHERE IdPasajero = @IdPasajero", cn, tran))
 
         public int VincularConUsuario(int idPasajero, int idUsuario)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int rows;
-                        using (var cmd = new SqlCommand(@"UPDATE Pasajeros
+                        using (SqlCommand cmd = new SqlCommand(@"UPDATE Pasajeros
 SET IdUsuario = @IdUsuario,
     FechaActualizacion = @FechaActualizacion
 WHERE IdPasajero = @IdPasajero
@@ -230,7 +230,7 @@ WHERE IdPasajero = @IdPasajero
         private string DecryptOrNull(object dbValue)
         {
             if (dbValue == DBNull.Value || dbValue == null) return null;
-            var value = dbValue.ToString();
+            string value = dbValue.ToString();
             if (string.IsNullOrWhiteSpace(value)) return string.Empty;
             return _encryptionService.Decrypt(value);
         }

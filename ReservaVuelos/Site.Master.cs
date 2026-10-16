@@ -55,7 +55,7 @@ namespace ReservaVuelos
 
         private void SeleccionarIdioma(Idioma idioma)
         {
-            var item = ddlIdioma.Items.FindByValue(idioma.Codigo);
+            ListItem item = ddlIdioma.Items.FindByValue(idioma.Codigo);
             if (item == null) return;
             ddlIdioma.ClearSelection();
             item.Selected = true;
@@ -69,9 +69,9 @@ namespace ReservaVuelos
             Traductor.TraducirControles(this, IdiomaService.Instancia.IdiomaActual);
 
             // Mostrar/ocultar elementos del menú según sesión y rol
-            var user = Session["User"] as BE.Usuario;
-            var pageName = System.IO.Path.GetFileName(Request.AppRelativeCurrentExecutionFilePath);
-            var integrity = new IntegrityService();
+            BE.Usuario user = Session["User"] as BE.Usuario;
+            string pageName = System.IO.Path.GetFileName(Request.AppRelativeCurrentExecutionFilePath);
+            IntegrityService integrity = new IntegrityService();
             if (string.IsNullOrWhiteSpace(pageName))
                 pageName = System.IO.Path.GetFileName(Request.FilePath);
             pageName = integrity.NormalizePageName(pageName);

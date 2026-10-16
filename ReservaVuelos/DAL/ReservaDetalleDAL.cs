@@ -9,9 +9,9 @@ namespace ReservaVuelos.DAL
     {
         public List<ReservaDetalle> GetByReservaCabecera(int idReservaCabecera)
         {
-            var res = new List<ReservaDetalle>();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"SELECT rd.*, v.Origen, v.Destino, v.FechaSalida, v.HoraSalida
+            List<ReservaDetalle> res = new List<ReservaDetalle>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(@"SELECT rd.*, v.Origen, v.Destino, v.FechaSalida, v.HoraSalida
 FROM ReservaDetalle rd
 INNER JOIN Vuelos v ON rd.IdVuelo = v.IdVuelo
 WHERE rd.IdReservaCabecera = @IdReservaCabecera
@@ -19,13 +19,13 @@ ORDER BY v.FechaSalida ASC, v.HoraSalida ASC", cn))
             {
                 cmd.Parameters.AddWithValue("@IdReservaCabecera", idReservaCabecera);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     while (rdr.Read())
                     {
-                        var fechaSalida = Convert.ToDateTime(rdr["FechaSalida"]);
-                        var horaSalida = (TimeSpan)rdr["HoraSalida"];
-                        var precioUnitario = Convert.ToDecimal(rdr["PrecioUnitario"]);
+                        DateTime fechaSalida = Convert.ToDateTime(rdr["FechaSalida"]);
+                        TimeSpan horaSalida = (TimeSpan)rdr["HoraSalida"];
+                        decimal precioUnitario = Convert.ToDecimal(rdr["PrecioUnitario"]);
 
                         res.Add(new ReservaDetalle
                         {

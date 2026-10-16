@@ -13,9 +13,9 @@ namespace ReservaVuelos
 
         protected void btnRegister_Click(object sender, EventArgs e)
         {
-            var nombre = txtNombre.Text.Trim();
-            var email = txtEmail.Text.Trim();
-            var pwd = txtPassword.Text;
+            string nombre = txtNombre.Text.Trim();
+            string email = txtEmail.Text.Trim();
+            string pwd = txtPassword.Text;
 
             string msg;
             if (!PasswordPolicyService.Validate(pwd, out msg))
@@ -24,17 +24,17 @@ namespace ReservaVuelos
                 return;
             }
 
-            var usuario = new BE.Usuario
+            BE.Usuario usuario = new BE.Usuario
             {
                 Nombre = nombre,
                 Email = email,
                 Rol = "Usuario"
             };
 
-            var srv = new SeguridadService();
+            SeguridadService srv = new SeguridadService();
             try
             {
-                var id = srv.RegistrarUsuario(usuario, pwd);
+                int id = srv.RegistrarUsuario(usuario, pwd);
                 // redirigir a login mostrando mensaje
                 Response.Redirect("Login.aspx?msg=" + Server.UrlEncode("Usuario creado correctamente. Inicie sesión."));
             }

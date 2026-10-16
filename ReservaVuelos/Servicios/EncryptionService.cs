@@ -12,7 +12,7 @@ namespace ReservaVuelos.Servicios
 
         public EncryptionService()
         {
-            var keyBase64 = ConfigurationManager.AppSettings["EncryptionKey"];
+            string keyBase64 = ConfigurationManager.AppSettings["EncryptionKey"];
             if (string.IsNullOrWhiteSpace(keyBase64))
                 throw new InvalidOperationException("Falta la clave de encriptación en Web.config (appSettings: EncryptionKey).");
 
@@ -34,17 +34,17 @@ namespace ReservaVuelos.Servicios
             if (value == null) return null;
             if (value.Length == 0) return string.Empty;
 
-            using (var aes = Aes.Create())
+            using (Aes aes = Aes.Create())
             {
                 aes.Key = _key;
                 aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
                 aes.GenerateIV();
 
-                var plainBytes = Encoding.UTF8.GetBytes(value);
-                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                byte[] plainBytes = Encoding.UTF8.GetBytes(value);
+                using (ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
                 {
-                    var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+                    byte[] cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
                     return string.Format("{0}:{1}:{2}", Prefix, Convert.ToBase64String(aes.IV), Convert.ToBase64String(cipherBytes));
                 }
             }
@@ -56,7 +56,7 @@ namespace ReservaVuelos.Servicios
             if (value.Length == 0) return string.Empty;
             if (!value.StartsWith(Prefix + ":", StringComparison.Ordinal)) return value;
 
-            var parts = value.Split(':');
+            string[] parts = value.Split(':');
             if (parts.Length != 3 || !string.Equals(parts[0], Prefix, StringComparison.Ordinal))
                 throw new InvalidOperationException("El valor cifrado tiene un formato inválido.");
 
@@ -74,16 +74,16 @@ namespace ReservaVuelos.Servicios
 
             try
             {
-                using (var aes = Aes.Create())
+                using (Aes aes = Aes.Create())
                 {
                     aes.Key = _key;
                     aes.IV = iv;
                     aes.Mode = CipherMode.CBC;
                     aes.Padding = PaddingMode.PKCS7;
 
-                    using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                    using (ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
                     {
-                        var plainBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
+                        byte[] plainBytes = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
                         return Encoding.UTF8.GetString(plainBytes);
                     }
                 }

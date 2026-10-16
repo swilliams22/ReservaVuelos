@@ -12,10 +12,10 @@ namespace ReservaVuelos.Servicios
     {
         public static T Llamar<T>(Func<AeroLinkWSSoapClient, T> operacion)
         {
-            var cliente = new AeroLinkWSSoapClient();
+            AeroLinkWSSoapClient cliente = new AeroLinkWSSoapClient();
             try
             {
-                var resultado = operacion(cliente);
+                T resultado = operacion(cliente);
                 cliente.Close();
                 return resultado;
             }

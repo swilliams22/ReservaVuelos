@@ -1,3 +1,4 @@
+using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
@@ -9,7 +10,7 @@ namespace ReservaVuelos
         private BitacoraBLL _bBLL = new BitacoraBLL();
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (user != null)
             {
                 // Logout -> Info

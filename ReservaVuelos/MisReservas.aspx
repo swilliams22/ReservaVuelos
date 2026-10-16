@@ -1,53 +1,50 @@
 <%@ Page Title="Mis reservas" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="MisReservas.aspx.cs" Inherits="ReservaVuelos.MisReservas" %>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
-    <h2>Mis reservas</h2>
+    <h2 runat="server" data-i18n="misreservas.titulo">Mis reservas</h2>
     <asp:Label ID="lblMsg" runat="server" ForeColor="Red"></asp:Label>
 
     <asp:Repeater ID="rptReservas" runat="server" OnItemCommand="rptReservas_ItemCommand">
         <ItemTemplate>
             <div class="reservation-card">
                 <div class="reservation-header">
-                    <h3>Reserva #<%# Eval("IdReservaCabecera") %></h3>
-                    <span class="reservation-status <%# GetEstadoClass(Eval("Estado").ToString()) %>">
-                        <%# Eval("Estado") %>
-                    </span>
+                    <h3><span runat="server" data-i18n="misreservas.lbl.reserva">Reserva #</span><%# Eval("IdReservaCabecera") %></h3>
+                    <span runat="server" class='reservation-status <%# GetEstadoClass(Eval("Estado").ToString()) %>' data-i18n='<%# "misreservas.estado." + Eval("Estado").ToString().ToLowerInvariant() %>'><%# Eval("Estado") %></span>
                 </div>
                 <div class="reservation-info">
-                    <p><strong>Fecha de creación:</strong> <%# Eval("FechaReserva", "{0:yyyy-MM-dd HH:mm}") %></p>
-                    <p><strong>Monto total:</strong> <%# Eval("MontoTotal", "{0:C}") %></p>
-                    <%# Eval("FechaCancelacion") != DBNull.Value && Eval("FechaCancelacion") != null ? "<p><strong>Fecha de cancelación:</strong> " + string.Format("{0:yyyy-MM-dd HH:mm}", Eval("FechaCancelacion")) + "</p>" : string.Empty %>
+                    <p><strong runat="server" data-i18n="misreservas.lbl.fechaCreacion">Fecha de creación:</strong> <%# Eval("FechaReserva", "{0:yyyy-MM-dd HH:mm}") %></p>
+                    <p><strong runat="server" data-i18n="misreservas.lbl.montoTotal">Monto total:</strong> <%# Eval("MontoTotal", "{0:C}") %></p>
+                    <p runat="server" visible='<%# Eval("FechaCancelacion") != DBNull.Value && Eval("FechaCancelacion") != null %>'><strong runat="server" data-i18n="misreservas.lbl.fechaCancelacion">Fecha de cancelación:</strong> <%# Eval("FechaCancelacion", "{0:yyyy-MM-dd HH:mm}") %></p>
                 </div>
 
                 <div class="reservation-details">
-                    <h4>Vuelos:</h4>
+                    <h4 runat="server" data-i18n="misreservas.sec.vuelos">Vuelos:</h4>
                     <asp:Repeater ID="rptDetalles" runat="server" DataSource='<%# GetDetalles((int)Eval("IdReservaCabecera")) %>'>
                         <ItemTemplate>
                             <div class="flight-detail">
                                 <span>✈ <%# Eval("Origen") %> → <%# Eval("Destino") %></span>
                                 <span><%# Eval("FechaSalida", "{0:yyyy-MM-dd}") %> <%# Eval("HoraSalida") %></span>
-                                <span>Cantidad: <%# Eval("Cantidad") %> | Precio unitario: <%# Eval("PrecioUnitario", "{0:C}") %> | Subtotal: <%# Eval("SubTotal", "{0:C}") %></span>
+                                <span><span runat="server" data-i18n="misreservas.lbl.cantidad">Cantidad:</span> <%# Eval("Cantidad") %> | <span runat="server" data-i18n="misreservas.lbl.precioUnitario">Precio unitario:</span> <%# Eval("PrecioUnitario", "{0:C}") %> | <span runat="server" data-i18n="misreservas.lbl.subtotal">Subtotal:</span> <%# Eval("SubTotal", "{0:C}") %></span>
                             </div>
                         </ItemTemplate>
                     </asp:Repeater>
                 </div>
 
                 <div class="reservation-passengers">
-                    <h4>Pasajeros:</h4>
+                    <h4 runat="server" data-i18n="misreservas.sec.pasajeros">Pasajeros:</h4>
                     <asp:Repeater ID="rptPasajeros" runat="server" DataSource='<%# GetPasajeros((int)Eval("IdReservaCabecera")) %>'>
                         <ItemTemplate>
                             <div class="passenger-info">
                                 <span>👤 <%# Eval("NombreCompleto") %></span>
-                                <span>Doc: <%# Eval("Documento") %></span>
-                                <%# Eval("Email") != null && !string.IsNullOrEmpty(Eval("Email").ToString()) ? "| Email: " + Eval("Email") : "" %>
+                                <span><span runat="server" data-i18n="misreservas.lbl.doc">Doc:</span> <%# Eval("Documento") %></span>
+                                <span runat="server" visible='<%# Eval("Email") != null && !string.IsNullOrEmpty(Eval("Email").ToString()) %>'>| <span runat="server" data-i18n="misreservas.lbl.email">Email:</span> <%# Eval("Email") %></span>
                             </div>
                         </ItemTemplate>
                     </asp:Repeater>
                 </div>
 
                 <div class="reservation-actions">
-                    <asp:Button runat="server" ID="btnCancelar" CssClass="btn-cancel" Text="Cancelar Reserva" 
+                    <asp:Button runat="server" ID="btnCancelar" CssClass="btn-cancel" data-i18n="misreservas.btn.cancelar" Text="Cancelar Reserva" 
                         CommandName="Cancelar" CommandArgument='<%# Eval("IdReservaCabecera") %>' 
-                        OnClientClick="return confirm('¿Confirma cancelar esta reserva?');"
                         Visible='<%# Eval("Estado").ToString() == "Activa" && ReservaVuelos.Servicios.AutorizacionService.TienePermiso(ReservaVuelos.Servicios.SesionService.GetUser(), ReservaVuelos.Servicios.Permisos.CancelarReserva) %>' />
                 </div>
             </div>

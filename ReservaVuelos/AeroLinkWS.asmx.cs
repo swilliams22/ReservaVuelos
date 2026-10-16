@@ -88,11 +88,11 @@ namespace ReservaVuelos
         {
             try
             {
-                var usuario = new SeguridadService().Authenticate((email ?? "").Trim(), password ?? "");
+                Usuario usuario = new SeguridadService().Authenticate((email ?? "").Trim(), password ?? "");
                 if (usuario == null)
                     return new ResultadoLogin { Exitoso = false, Codigo = "CREDENCIALES", Mensaje = "Usuario o contraseña incorrectos." };
 
-                var token = Guid.NewGuid().ToString("N");
+                string token = Guid.NewGuid().ToString("N");
                 LimpiarVencidos();
                 _tokens[token] = new DatosToken { IdUsuario = usuario.IdUsuario, Email = usuario.Email, Vence = DateTime.Now.AddMinutes(MINUTOS_TOKEN) };
 
@@ -122,11 +122,11 @@ namespace ReservaVuelos
             if (cantidadPasajeros <= 0)
                 return new CalculoReserva { Valido = false, Mensaje = "La cantidad de pasajeros debe ser mayor a cero.", Lineas = new LineaCalculo[0] };
 
-            var vuelos = new VueloBLL();
-            var lineas = new List<LineaCalculo>();
-            foreach (var id in idsVuelo)
+            VueloBLL vuelos = new VueloBLL();
+            List<LineaCalculo> lineas = new List<LineaCalculo>();
+            foreach (int id in idsVuelo)
             {
-                var v = vuelos.GetById(id);
+                Vuelo v = vuelos.GetById(id);
                 if (v == null)
                     return new CalculoReserva { Valido = false, Mensaje = "No existe el vuelo " + id + ".", Lineas = new LineaCalculo[0] };
                 if (!v.Activo)
@@ -154,11 +154,11 @@ namespace ReservaVuelos
         [WebMethod(Description = "Informe de vuelos en XML. Filtro: Todos, Activos o Baja. Requiere el token de un Administrador.")]
         public string ObtenerInformeVuelosXml(string token, string filtro)
         {
-            var datos = ExigirPermiso(token, Permisos.ExportarVuelos);
+            DatosToken datos = ExigirPermiso(token, Permisos.ExportarVuelos);
 
-            var estado = string.IsNullOrWhiteSpace(filtro) ? "Activos" : filtro.Trim();
-            var lista = new VueloBLL().Search(null, null, null, estado);
-            var xml = Encoding.UTF8.GetString(new XmlVuelosService().Exportar(lista));
+            string estado = string.IsNullOrWhiteSpace(filtro) ? "Activos" : filtro.Trim();
+            List<Vuelo> lista = new VueloBLL().Search(null, null, null, estado);
+            string xml = Encoding.UTF8.GetString(new XmlVuelosService().Exportar(lista));
 
             Registrar(datos.Email, "Informe XML de vuelos por web service. Filtro: " + estado + " - Cantidad: " + lista.Count, 1);
             return xml;
@@ -167,19 +167,19 @@ namespace ReservaVuelos
         [WebMethod(Description = "Importa vuelos desde un XML (mismo formato que el informe). Requiere el token de un Administrador.")]
         public ResultadoImportacionWS ImportarVuelosXml(string token, string xml)
         {
-            var datos = ExigirPermiso(token, Permisos.ImportarVuelos);
+            DatosToken datos = ExigirPermiso(token, Permisos.ImportarVuelos);
 
             if (string.IsNullOrWhiteSpace(xml))
                 return new ResultadoImportacionWS { Exitoso = false, Mensaje = "El XML está vacío.", Rechazados = new string[0] };
 
-            var bytes = new UTF8Encoding(false).GetBytes(xml);
+            byte[] bytes = new UTF8Encoding(false).GetBytes(xml);
             if (bytes.Length > XmlVuelosService.MAX_BYTES)
                 return new ResultadoImportacionWS { Exitoso = false, Mensaje = "El XML supera el máximo de " + (XmlVuelosService.MAX_BYTES / 1024) + " KB.", Rechazados = new string[0] };
 
             try
             {
                 XmlVuelosService.ResultadoImportacion r;
-                using (var ms = new MemoryStream(bytes))
+                using (MemoryStream ms = new MemoryStream(bytes))
                     r = new XmlVuelosService().Importar(ms, new VueloBLL());
 
                 Registrar(datos.Email, "Importación XML de vuelos por web service. Importados: " + r.Importados + " - Rechazados: " + r.Rechazados.Count, r.Rechazados.Count > 0 ? 2 : 1);
@@ -208,7 +208,7 @@ namespace ReservaVuelos
                 throw new SoapException("Token inválido o vencido. Inicie sesión nuevamente.", SoapException.ClientFaultCode);
 
             // El token identifica al usuario; el rol y el estado se consultan nuevamente.
-            var usuario = new UsuarioBLL().GetByEmail(datos.Email);
+            Usuario usuario = new UsuarioBLL().GetByEmail(datos.Email);
             if (usuario == null || usuario.IdUsuario != datos.IdUsuario || !usuario.Activo || !AutorizacionService.TienePermiso(usuario, permiso))
                 throw new SoapException("No tiene permiso para esta operación.", SoapException.ClientFaultCode);
             if (new IntegrityService().IsContingencyMode())
@@ -221,7 +221,7 @@ namespace ReservaVuelos
         private static void LimpiarVencidos()
         {
             DatosToken descartado;
-            foreach (var par in _tokens.Where(p => p.Value.Vence < DateTime.Now).ToList())
+            foreach (KeyValuePair<string, DatosToken> par in _tokens.Where(p => p.Value.Vence < DateTime.Now).ToList())
                 _tokens.TryRemove(par.Key, out descartado);
         }
 

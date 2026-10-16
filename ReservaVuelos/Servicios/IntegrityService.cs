@@ -151,11 +151,11 @@ namespace ReservaVuelos.Servicios
         public ConfiguracionSistema GetConfiguracion()
         {
             EnsureInfrastructure();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT TOP 1 * FROM ConfiguracionSistema WHERE IdConfiguracion = 1", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT TOP 1 * FROM ConfiguracionSistema WHERE IdConfiguracion = 1", cn))
             {
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                     {
@@ -181,18 +181,18 @@ namespace ReservaVuelos.Servicios
         public List<IntegridadError> GetErrors(bool activeOnly)
         {
             EnsureInfrastructure();
-            var errors = new List<IntegridadError>();
-            using (var cn = ConexionDAL.GetConnection())
+            List<IntegridadError> errors = new List<IntegridadError>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
-                var sql = "SELECT * FROM IntegridadError";
+                string sql = "SELECT * FROM IntegridadError";
                 if (activeOnly) sql += " WHERE Estado = @Estado";
                 sql += " ORDER BY Fecha DESC";
 
-                using (var cmd = new SqlCommand(sql, cn))
+                using (SqlCommand cmd = new SqlCommand(sql, cn))
                 {
                     if (activeOnly) cmd.Parameters.AddWithValue("@Estado", "Activo");
                     cn.Open();
-                    using (var rdr = cmd.ExecuteReader())
+                    using (SqlDataReader rdr = cmd.ExecuteReader())
                     {
                         while (rdr.Read()) errors.Add(MapError(rdr));
                     }
@@ -205,8 +205,8 @@ namespace ReservaVuelos.Servicios
         public IntegrityValidationResult ValidateTable(string tableName)
         {
             EnsureInfrastructure();
-            var result = new IntegrityValidationResult { TableName = tableName };
-            using (var cn = ConexionDAL.GetConnection())
+            IntegrityValidationResult result = new IntegrityValidationResult { TableName = tableName };
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
                 ValidateTable(cn, null, tableName, result);
@@ -223,7 +223,7 @@ namespace ReservaVuelos.Servicios
 
         public void EnsureTableIsValid(string tableName)
         {
-            var result = ValidateTable(tableName);
+            IntegrityValidationResult result = ValidateTable(tableName);
             if (!result.IsValid)
             {
                 SetContingency(true, "Se detectaron inconsistencias de integridad en " + tableName + ".");
@@ -233,7 +233,7 @@ namespace ReservaVuelos.Servicios
 
         public void EnsureAllTablesAreValid()
         {
-            var result = ValidateAllAndPersist();
+            IntegrityValidationResult result = ValidateAllAndPersist();
             if (!result.IsValid)
                 throw new InvalidOperationException("La aplicacion se encuentra temporalmente en mantenimiento debido a una verificacion de integridad.");
         }
@@ -241,11 +241,11 @@ namespace ReservaVuelos.Servicios
         public IntegrityValidationResult ValidateAll()
         {
             EnsureInfrastructure();
-            var result = new IntegrityValidationResult();
-            using (var cn = ConexionDAL.GetConnection())
+            IntegrityValidationResult result = new IntegrityValidationResult();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                foreach (var table in CriticalTables)
+                foreach (string table in CriticalTables)
                 {
                     ValidateTable(cn, null, table, result);
                 }
@@ -258,7 +258,7 @@ namespace ReservaVuelos.Servicios
         public IntegrityValidationResult ValidateAllAndPersist()
         {
             SafeLog("Sistema", "Inicio de validacion general de integridad.", 1);
-            var result = ValidateAll();
+            IntegrityValidationResult result = ValidateAll();
             if (result.IsValid)
             {
                 SafeLog("Sistema", "Validacion de integridad correcta.", 1);
@@ -274,14 +274,14 @@ namespace ReservaVuelos.Servicios
         public void RecalculateAll(int? adminUserId, string action)
         {
             EnsureInfrastructure();
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
-                        foreach (var table in CriticalTables)
+                        foreach (string table in CriticalTables)
                         {
                             RecalculateTable(cn, tran, table);
                         }
@@ -305,7 +305,7 @@ namespace ReservaVuelos.Servicios
 
         public IntegrityValidationResult TryResolveAfterValidation(int? adminUserId, string action)
         {
-            var result = ValidateAll();
+            IntegrityValidationResult result = ValidateAll();
             if (!result.IsValid)
             {
                 PersistValidationErrors(result.Errors);
@@ -313,8 +313,8 @@ namespace ReservaVuelos.Servicios
                 return result;
             }
 
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"UPDATE IntegridadError
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(@"UPDATE IntegridadError
 SET Estado = @EstadoResuelto,
     IdUsuarioAdministrador = @IdUsuarioAdministrador,
     AccionTomada = @AccionTomada
@@ -341,7 +341,7 @@ WHERE Estado = @EstadoActivo", cn))
 
         public void UpdateTableDVV(SqlConnection cn, SqlTransaction tran, string tableName)
         {
-            using (var cmd = new SqlCommand(@"MERGE IntegridadDVV AS target
+            using (SqlCommand cmd = new SqlCommand(@"MERGE IntegridadDVV AS target
 USING (SELECT @NombreTabla AS NombreTabla, ISNULL(SUM(CONVERT(BIGINT, DVH)), 0) AS ValorDVV FROM " + tableName + @") AS source
 ON target.NombreTabla = source.NombreTabla
 WHEN MATCHED THEN UPDATE SET ValorDVV = source.ValorDVV, FechaCalculo = @FechaCalculo
@@ -355,8 +355,8 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
 
         public void UpdateRecordDVH(SqlConnection cn, SqlTransaction tran, string tableName, int id)
         {
-            var dvh = CalculateStoredRowDVH(cn, tran, tableName, id);
-            using (var cmd = new SqlCommand("UPDATE " + tableName + " SET DVH = @DVH WHERE " + GetPk(tableName) + " = @Id", cn, tran))
+            int dvh = CalculateStoredRowDVH(cn, tran, tableName, id);
+            using (SqlCommand cmd = new SqlCommand("UPDATE " + tableName + " SET DVH = @DVH WHERE " + GetPk(tableName) + " = @Id", cn, tran))
             {
                 cmd.Parameters.AddWithValue("@DVH", dvh);
                 cmd.Parameters.AddWithValue("@Id", id);
@@ -368,7 +368,7 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
 
         private void UpdateRecordSnapshot(SqlConnection cn, SqlTransaction tran, string tableName, int id, int dvh)
         {
-            using (var cmd = new SqlCommand(@"MERGE IntegridadRegistro AS target
+            using (SqlCommand cmd = new SqlCommand(@"MERGE IntegridadRegistro AS target
 USING (SELECT @NombreTabla AS NombreTabla, @IdRegistro AS IdRegistro) AS source
 ON target.NombreTabla = source.NombreTabla AND target.IdRegistro = source.IdRegistro
 WHEN MATCHED THEN UPDATE SET ValorDVH = @ValorDVH, FechaCalculo = @FechaCalculo
@@ -384,7 +384,7 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
 
         public void EnsureInfrastructure()
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
                 EnsureInfrastructure(cn, null);
@@ -396,12 +396,12 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
             if (!IsContingencyMode()) return true;
 
             pageName = NormalizePageName(pageName);
-            var allowedForAll = new[] { "Login.aspx", "Logout.aspx", "Mantenimiento.aspx" };
+            string[] allowedForAll = new[] { "Login.aspx", "Logout.aspx", "Mantenimiento.aspx" };
             if (allowedForAll.Any(p => string.Equals(p, pageName, StringComparison.OrdinalIgnoreCase))) return true;
 
             if (SesionService.IsWebMaster(user))
             {
-                var allowedWebMaster = new[] { "GestionIntegridad.aspx", "Backup.aspx", "Bitacora.aspx" };
+                string[] allowedWebMaster = new[] { "GestionIntegridad.aspx", "Backup.aspx", "Bitacora.aspx" };
                 return allowedWebMaster.Any(p => string.Equals(p, pageName, StringComparison.OrdinalIgnoreCase));
             }
 
@@ -413,7 +413,7 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
             if (string.IsNullOrWhiteSpace(pageName)) return string.Empty;
 
             pageName = pageName.Replace("\\", "/").Trim();
-            var slashIndex = pageName.LastIndexOf('/');
+            int slashIndex = pageName.LastIndexOf('/');
             if (slashIndex >= 0) pageName = pageName.Substring(slashIndex + 1);
             if (pageName.StartsWith("~", StringComparison.Ordinal)) pageName = pageName.Substring(1);
             if (pageName.StartsWith("/", StringComparison.Ordinal)) pageName = pageName.Substring(1);
@@ -425,10 +425,10 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
         {
             if (!IsContingencyMode()) return false;
 
-            var context = HttpContext.Current;
+            HttpContext context = HttpContext.Current;
             if (context == null) return false;
 
-            var target = SesionService.IsWebMaster(user)
+            string target = SesionService.IsWebMaster(user)
                 ? "~/GestionIntegridad.aspx"
                 : "~/Mantenimiento.aspx";
 
@@ -440,9 +440,9 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
         private void ValidateTable(SqlConnection cn, SqlTransaction tran, string tableName, IntegrityValidationResult result)
         {
             string pk = GetPk(tableName);
-            var actualRows = new Dictionary<string, Tuple<int, int>>();
-            using (var cmd = new SqlCommand("SELECT * FROM " + tableName, cn, tran))
-            using (var rdr = cmd.ExecuteReader())
+            Dictionary<string, Tuple<int, int>> actualRows = new Dictionary<string, Tuple<int, int>>();
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM " + tableName, cn, tran))
+            using (SqlDataReader rdr = cmd.ExecuteReader())
             {
                 while (rdr.Read())
                 {
@@ -453,13 +453,13 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
                 }
             }
 
-            var expectedRows = GetExpectedRows(cn, tran, tableName);
+            Dictionary<string, int> expectedRows = GetExpectedRows(cn, tran, tableName);
             bool hasRecordErrors = false;
-            foreach (var actual in actualRows)
+            foreach (KeyValuePair<string, Tuple<int, int>> actual in actualRows)
             {
                 int expectedDvh;
-                var stored = actual.Value.Item1;
-                var calculated = actual.Value.Item2;
+                int stored = actual.Value.Item1;
+                int calculated = actual.Value.Item2;
                 if (!expectedRows.TryGetValue(actual.Key, out expectedDvh))
                 {
                     hasRecordErrors = true;
@@ -472,7 +472,7 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
                 }
             }
 
-            foreach (var expected in expectedRows)
+            foreach (KeyValuePair<string, int> expected in expectedRows)
             {
                 if (!actualRows.ContainsKey(expected.Key))
                 {
@@ -482,15 +482,15 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
             }
 
             long storedDvv = 0;
-            using (var cmd = new SqlCommand("SELECT ValorDVV FROM IntegridadDVV WHERE NombreTabla = @NombreTabla", cn, tran))
+            using (SqlCommand cmd = new SqlCommand("SELECT ValorDVV FROM IntegridadDVV WHERE NombreTabla = @NombreTabla", cn, tran))
             {
                 cmd.Parameters.AddWithValue("@NombreTabla", tableName);
-                var value = cmd.ExecuteScalar();
+                object value = cmd.ExecuteScalar();
                 storedDvv = value != null && value != DBNull.Value ? Convert.ToInt64(value) : long.MinValue;
             }
 
             long calculatedDvv;
-            using (var cmd = new SqlCommand("SELECT ISNULL(SUM(CONVERT(BIGINT, DVH)), 0) FROM " + tableName, cn, tran))
+            using (SqlCommand cmd = new SqlCommand("SELECT ISNULL(SUM(CONVERT(BIGINT, DVH)), 0) FROM " + tableName, cn, tran))
             {
                 calculatedDvv = Convert.ToInt64(cmd.ExecuteScalar());
             }
@@ -513,13 +513,13 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
 
         private Dictionary<string, int> GetExpectedRows(SqlConnection cn, SqlTransaction tran, string tableName)
         {
-            var rows = new Dictionary<string, int>();
-            using (var cmd = new SqlCommand(@"SELECT IdRegistro, ValorDVH
+            Dictionary<string, int> rows = new Dictionary<string, int>();
+            using (SqlCommand cmd = new SqlCommand(@"SELECT IdRegistro, ValorDVH
 FROM IntegridadRegistro
 WHERE NombreTabla = @NombreTabla", cn, tran))
             {
                 cmd.Parameters.AddWithValue("@NombreTabla", tableName);
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     while (rdr.Read())
                     {
@@ -548,20 +548,20 @@ WHERE NombreTabla = @NombreTabla", cn, tran))
 
         private void RecalculateTable(SqlConnection cn, SqlTransaction tran, string tableName)
         {
-            var ids = new List<int>();
-            using (var cmd = new SqlCommand("SELECT " + GetPk(tableName) + " FROM " + tableName, cn, tran))
-            using (var rdr = cmd.ExecuteReader())
+            List<int> ids = new List<int>();
+            using (SqlCommand cmd = new SqlCommand("SELECT " + GetPk(tableName) + " FROM " + tableName, cn, tran))
+            using (SqlDataReader rdr = cmd.ExecuteReader())
             {
                 while (rdr.Read()) ids.Add(Convert.ToInt32(rdr[0]));
             }
 
-            foreach (var id in ids)
+            foreach (int id in ids)
             {
                 UpdateRecordDVH(cn, tran, tableName, id);
             }
 
             UpdateTableDVV(cn, tran, tableName);
-            using (var cmd = new SqlCommand(@"DELETE FROM IntegridadRegistro
+            using (SqlCommand cmd = new SqlCommand(@"DELETE FROM IntegridadRegistro
 WHERE NombreTabla = @NombreTabla
   AND IdRegistro NOT IN (SELECT CONVERT(NVARCHAR(100), " + GetPk(tableName) + @") FROM " + tableName + @")", cn, tran))
             {
@@ -572,10 +572,10 @@ WHERE NombreTabla = @NombreTabla
 
         private int CalculateStoredRowDVH(SqlConnection cn, SqlTransaction tran, string tableName, int id)
         {
-            using (var cmd = new SqlCommand("SELECT * FROM " + tableName + " WHERE " + GetPk(tableName) + " = @Id", cn, tran))
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM " + tableName + " WHERE " + GetPk(tableName) + " = @Id", cn, tran))
             {
                 cmd.Parameters.AddWithValue("@Id", id);
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (!rdr.Read()) throw new InvalidOperationException("No se encontro el registro para calcular DVH.");
                     return CalculateDVHFromReader(tableName, rdr);
@@ -610,14 +610,14 @@ WHERE NombreTabla = @NombreTabla
 
         private void PersistValidationErrors(List<IntegridadError> errors)
         {
-            foreach (var error in errors)
+            foreach (IntegridadError error in errors)
             {
-                using (var cn = ConexionDAL.GetConnection())
+                using (SqlConnection cn = ConexionDAL.GetConnection())
                 {
                     cn.Open();
                     if (ActiveErrorExists(cn, null, error)) continue;
 
-                    using (var cmd = new SqlCommand(@"INSERT INTO IntegridadError
+                    using (SqlCommand cmd = new SqlCommand(@"INSERT INTO IntegridadError
 (Fecha, TipoError, TipoOperacion, NombreTabla, IdRegistroAfectado, ValorEsperado, ValorCalculado, Estado)
 VALUES (@Fecha, @TipoError, @TipoOperacion, @NombreTabla, @IdRegistroAfectado, @ValorEsperado, @ValorCalculado, @Estado)", cn))
                     {
@@ -633,14 +633,14 @@ VALUES (@Fecha, @TipoError, @TipoOperacion, @NombreTabla, @IdRegistroAfectado, @
                     }
                 }
 
-                var row = string.IsNullOrWhiteSpace(error.IdRegistroAfectado) ? "sin registro especifico" : "registro " + error.IdRegistroAfectado;
+                string row = string.IsNullOrWhiteSpace(error.IdRegistroAfectado) ? "sin registro especifico" : "registro " + error.IdRegistroAfectado;
                 SafeLog("Sistema", string.Format("Se detecto una inconsistencia {0} en la tabla {1}, {2}.", error.TipoError, error.NombreTabla, row), 4);
             }
         }
 
         private bool ActiveErrorExists(SqlConnection cn, SqlTransaction tran, IntegridadError error)
         {
-            using (var cmd = new SqlCommand(@"SELECT COUNT(1) FROM IntegridadError
+            using (SqlCommand cmd = new SqlCommand(@"SELECT COUNT(1) FROM IntegridadError
 WHERE Estado = @Estado
   AND TipoError = @TipoError
   AND ISNULL(TipoOperacion, '') = ISNULL(@TipoOperacion, '')
@@ -659,8 +659,8 @@ WHERE Estado = @Estado
         private void SetContingency(bool enabled, string reason)
         {
             EnsureInfrastructure();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"UPDATE ConfiguracionSistema
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(@"UPDATE ConfiguracionSistema
 SET ModoContingencia = @ModoContingencia,
     MotivoContingencia = @MotivoContingencia
 WHERE IdConfiguracion = 1", cn))
@@ -675,8 +675,8 @@ WHERE IdConfiguracion = 1", cn))
         private bool HasAnyDVV()
         {
             EnsureInfrastructure();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT COUNT(1) FROM IntegridadDVV", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT COUNT(1) FROM IntegridadDVV", cn))
             {
                 cn.Open();
                 return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
@@ -686,8 +686,8 @@ WHERE IdConfiguracion = 1", cn))
         private bool HasAnySnapshot()
         {
             EnsureInfrastructure();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT COUNT(1) FROM IntegridadRegistro", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT COUNT(1) FROM IntegridadRegistro", cn))
             {
                 cn.Open();
                 return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
@@ -696,7 +696,7 @@ WHERE IdConfiguracion = 1", cn))
 
         private void UpdateLastValidation(SqlConnection cn, SqlTransaction tran)
         {
-            using (var cmd = new SqlCommand(@"UPDATE ConfiguracionSistema
+            using (SqlCommand cmd = new SqlCommand(@"UPDATE ConfiguracionSistema
 SET FechaUltimaValidacion = @FechaUltimaValidacion
 WHERE IdConfiguracion = 1", cn, tran))
             {
@@ -764,7 +764,7 @@ VALUES (1, 0, NULL, NULL)");
 
         private void ExecuteNonQuery(SqlConnection cn, SqlTransaction tran, string sql)
         {
-            using (var cmd = new SqlCommand(sql, cn, tran))
+            using (SqlCommand cmd = new SqlCommand(sql, cn, tran))
             {
                 cmd.ExecuteNonQuery();
             }
@@ -826,15 +826,15 @@ VALUES (1, 0, NULL, NULL)");
         {
             try
             {
-                using (var cn = ConexionDAL.GetConnection())
+                using (SqlConnection cn = ConexionDAL.GetConnection())
                 {
                     cn.Open();
-                    using (var tran = cn.BeginTransaction())
+                    using (SqlTransaction tran = cn.BeginTransaction())
                     {
                         try
                         {
                             int id;
-                            using (var cmd = new SqlCommand(@"INSERT INTO Bitacora (Fecha, Usuario, Accion, Criticidad, Pantalla, DVH)
+                            using (SqlCommand cmd = new SqlCommand(@"INSERT INTO Bitacora (Fecha, Usuario, Accion, Criticidad, Pantalla, DVH)
 VALUES (@Fecha, @Usuario, @Accion, @Criticidad, @Pantalla, 0);
 SELECT SCOPE_IDENTITY();", cn, tran))
                             {

@@ -8,12 +8,24 @@ using System.Web.UI.WebControls;
 
 namespace ReservaVuelos
 {
-    public partial class DetalleReserva : System.Web.UI.Page
+    public partial class DetalleReserva : BasePage
     {
+        protected override string ClaveTitulo
+        {
+            get { return "detallereserva.tituloPagina"; }
+        }
+
         private VueloBLL _vBLL = new VueloBLL();
         private ClienteBLL _cBLL = new ClienteBLL();
         private PasajeroBLL _pBLL = new PasajeroBLL();
         private ReservaCabeceraV2BLL _rBLL = new ReservaCabeceraV2BLL();
+
+        // Observer: el texto del confirm del botón se arma en el idioma vigente.
+        public override void ActualizarIdioma(Idioma idioma)
+        {
+            base.ActualizarIdioma(idioma);
+            btnConfirmar.OnClientClick = "return confirm('" + TJs("detallereserva.msg.confirmar") + "');";
+        }
 
         private List<Vuelo> VuelosSeleccionados
         {
@@ -35,7 +47,7 @@ namespace ReservaVuelos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (user == null)
             {
                 Response.Redirect("Login.aspx");
@@ -44,8 +56,8 @@ namespace ReservaVuelos
 
             if (!IsPostBack)
             {
-                var idVueloStr = Request.QueryString["IdVuelo"];
-                var cantidadPasajerosStr = Request.QueryString["CantidadPasajeros"];
+                string idVueloStr = Request.QueryString["IdVuelo"];
+                string cantidadPasajerosStr = Request.QueryString["CantidadPasajeros"];
 
                 int idVuelo;
                 int cantidadPasajeros;
@@ -55,7 +67,7 @@ namespace ReservaVuelos
                     return;
                 }
 
-                var vuelo = _vBLL.GetById(idVuelo);
+                Vuelo vuelo = _vBLL.GetById(idVuelo);
                 if (vuelo == null || !vuelo.Activo || vuelo.CuposDisponibles < cantidadPasajeros || vuelo.FechaHoraSalida <= DateTime.Now)
                 {
                     Response.Redirect("BuscarVuelos.aspx");
@@ -93,19 +105,19 @@ namespace ReservaVuelos
         {
             gvPasajeros.DataSource = PasajerosTemporal;
             gvPasajeros.DataBind();
-            lblCantidadActualPasajeros.Text = string.Format("{0} de {1}", PasajerosTemporal.Count, CantidadPasajerosDeclarada);
+            lblCantidadActualPasajeros.Text = string.Format(T("detallereserva.fmt.cantidadDe"), PasajerosTemporal.Count, CantidadPasajerosDeclarada);
         }
 
         private void ActualizarMontoTotal()
         {
-            var cantidad = CantidadPasajerosDeclarada;
+            int cantidad = CantidadPasajerosDeclarada;
             decimal total;
             try
             {
                 // El cálculo lo hace el web service (AeroLinkWS.CalcularPrecioReserva).
-                var ids = new AeroLinkServiceReference.ArrayOfInt();
+                AeroLinkServiceReference.ArrayOfInt ids = new AeroLinkServiceReference.ArrayOfInt();
                 ids.AddRange(VuelosSeleccionados.Select(v => v.IdVuelo));
-                var calculo = AeroLinkCliente.Llamar(c => c.CalcularPrecioReserva(ids, cantidad));
+                ReservaVuelos.AeroLinkServiceReference.CalculoReserva calculo = AeroLinkCliente.Llamar(c => c.CalcularPrecioReserva(ids, cantidad));
                 if (!calculo.Valido)
                     throw new InvalidOperationException(calculo.Mensaje);
                 total = calculo.Total;
@@ -123,33 +135,33 @@ namespace ReservaVuelos
             lblMsg.Text = string.Empty;
             lblMsg.ForeColor = System.Drawing.Color.Red;
 
-            var nombre = txtNombrePasajero.Text.Trim();
-            var apellido = txtApellidoPasajero.Text.Trim();
-            var documento = txtDocumentoPasajero.Text.Trim();
-            var email = txtEmailPasajero.Text.Trim();
-            var nacionalidad = txtNacionalidadPasajero.Text.Trim();
+            string nombre = txtNombrePasajero.Text.Trim();
+            string apellido = txtApellidoPasajero.Text.Trim();
+            string documento = txtDocumentoPasajero.Text.Trim();
+            string email = txtEmailPasajero.Text.Trim();
+            string nacionalidad = txtNacionalidadPasajero.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(nombre))
             {
-                lblMsg.Text = "El nombre del pasajero es requerido.";
+                lblMsg.Text = T("detallereserva.msg.nombreRequerido");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(documento))
             {
-                lblMsg.Text = "El documento del pasajero es requerido.";
+                lblMsg.Text = T("detallereserva.msg.documentoRequerido");
                 return;
             }
 
             if (PasajerosTemporal.Any(p => string.Equals(p.Documento, documento, StringComparison.OrdinalIgnoreCase)))
             {
-                lblMsg.Text = "Ya existe un pasajero con ese documento en la lista.";
+                lblMsg.Text = T("detallereserva.msg.documentoDuplicado");
                 return;
             }
 
             if (PasajerosTemporal.Count >= CantidadPasajerosDeclarada)
             {
-                lblMsg.Text = "Ya alcanzó la cantidad de pasajeros declarada para esta reserva.";
+                lblMsg.Text = T("detallereserva.msg.cantidadAlcanzada");
                 return;
             }
 
@@ -181,22 +193,22 @@ namespace ReservaVuelos
             CargarPasajeros();
             ActualizarMontoTotal();
             lblMsg.ForeColor = System.Drawing.Color.Green;
-            lblMsg.Text = "Pasajero agregado correctamente.";
+            lblMsg.Text = T("detallereserva.msg.pasajeroAgregado");
         }
 
         protected void gvPasajeros_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName == "Eliminar")
             {
-                var documento = e.CommandArgument.ToString();
-                var pasajero = PasajerosTemporal.FirstOrDefault(p => p.Documento == documento);
+                string documento = e.CommandArgument.ToString();
+                Pasajero pasajero = PasajerosTemporal.FirstOrDefault(p => p.Documento == documento);
                 if (pasajero != null)
                 {
                     PasajerosTemporal.Remove(pasajero);
                     CargarPasajeros();
                     ActualizarMontoTotal();
                     lblMsg.ForeColor = System.Drawing.Color.Green;
-                    lblMsg.Text = "Pasajero eliminado.";
+                    lblMsg.Text = T("detallereserva.msg.pasajeroEliminado");
                 }
             }
         }
@@ -206,7 +218,7 @@ namespace ReservaVuelos
             lblMsg.Text = string.Empty;
             lblMsg.ForeColor = System.Drawing.Color.Red;
 
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (user == null)
             {
                 Response.Redirect("Login.aspx");
@@ -215,29 +227,29 @@ namespace ReservaVuelos
 
             if (CantidadPasajerosDeclarada < 1)
             {
-                lblMsg.Text = "La cantidad de pasajeros declarada es inválida.";
+                lblMsg.Text = T("detallereserva.msg.cantidadInvalida");
                 return;
             }
 
             if (PasajerosTemporal.Count != CantidadPasajerosDeclarada)
             {
-                lblMsg.Text = string.Format("Debe cargar exactamente {0} pasajero(s) para continuar.", CantidadPasajerosDeclarada);
+                lblMsg.Text = string.Format(T("detallereserva.msg.cantidadExacta"), CantidadPasajerosDeclarada);
                 return;
             }
 
             try
             {
-                var documentoCliente = txtDocumentoCliente.Text.Trim();
-                var cliente = _cBLL.GetOrCreateByUsuario(user.IdUsuario, user.Nombre, user.Email, documentoCliente);
+                string documentoCliente = txtDocumentoCliente.Text.Trim();
+                Cliente cliente = _cBLL.GetOrCreateByUsuario(user.IdUsuario, user.Nombre, user.Email, documentoCliente);
 
-                var pasajerosConId = new List<Pasajero>();
-                foreach (var pasajeroTemporal in PasajerosTemporal)
+                List<Pasajero> pasajerosConId = new List<Pasajero>();
+                foreach (Pasajero pasajeroTemporal in PasajerosTemporal)
                 {
                     // Se busca por Documento O por Email: si se buscara solo por Documento,
                     // un pasajero nuevo que reutiliza un Email ya registrado en otro
                     // pasajero terminaria intentando un INSERT que choca contra el indice
                     // unico IX_Pasajeros_Email_Unique.
-                    var pasajeroExistente = _pBLL.FindByEmailOrDocumento(pasajeroTemporal.Email, pasajeroTemporal.Documento);
+                    Pasajero pasajeroExistente = _pBLL.FindByEmailOrDocumento(pasajeroTemporal.Email, pasajeroTemporal.Documento);
                     if (pasajeroExistente != null)
                     {
                         pasajeroExistente.Nombre = pasajeroTemporal.Nombre;
@@ -256,7 +268,7 @@ namespace ReservaVuelos
                     }
                 }
 
-                var detalles = VuelosSeleccionados.Select(v => new ReservaDetalle
+                List<ReservaDetalle> detalles = VuelosSeleccionados.Select(v => new ReservaDetalle
                 {
                     IdVuelo = v.IdVuelo,
                     Cantidad = CantidadPasajerosDeclarada,
@@ -271,12 +283,12 @@ namespace ReservaVuelos
                 Session.Remove("PasajerosTemporal");
                 Session.Remove("CantidadPasajerosDeclarada");
 
-                Response.Redirect("MisReservas.aspx?msg=" + Server.UrlEncode("Reserva creada exitosamente."));
+                Response.Redirect("MisReservas.aspx?msg=" + Server.UrlEncode(T("detallereserva.msg.reservaCreada")));
             }
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
-                lblMsg.Text = "Error al crear la reserva: " + ex.Message;
+                lblMsg.Text = T("detallereserva.msg.errorCrear") + ": " + ex.Message;
             }
         }
 

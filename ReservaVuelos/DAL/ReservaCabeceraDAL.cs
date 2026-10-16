@@ -10,15 +10,15 @@ namespace ReservaVuelos.DAL
     {
         public int CreateWithDetails(ReservaCabecera cabecera, List<ReservaDetalle> detalles, List<ReservaPasajero> pasajeros)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int idReservaCabecera;
-                        using (var cmd = new SqlCommand(@"INSERT INTO ReservaCabecera (IdCliente, IdUsuarioCreador, FechaReserva, Estado, MontoTotal, FechaCreacion, FechaActualizacion, FechaCancelacion, IdUsuarioCancela, DVH)
+                        using (SqlCommand cmd = new SqlCommand(@"INSERT INTO ReservaCabecera (IdCliente, IdUsuarioCreador, FechaReserva, Estado, MontoTotal, FechaCreacion, FechaActualizacion, FechaCancelacion, IdUsuarioCancela, DVH)
 VALUES (@IdCliente, @IdUsuarioCreador, @FechaReserva, @Estado, @MontoTotal, @FechaCreacion, @FechaActualizacion, @FechaCancelacion, @IdUsuarioCancela, 0);
 SELECT SCOPE_IDENTITY();", cn, tran))
                         {
@@ -34,25 +34,25 @@ SELECT SCOPE_IDENTITY();", cn, tran))
                             idReservaCabecera = Convert.ToInt32(cmd.ExecuteScalar());
                         }
 
-                        var vuelosAfectados = new HashSet<int>();
-                        var detallesInsertados = new List<int>();
-                        foreach (var detalle in detalles)
+                        HashSet<int> vuelosAfectados = new HashSet<int>();
+                        List<int> detallesInsertados = new List<int>();
+                        foreach (ReservaDetalle detalle in detalles)
                         {
-                            using (var cmdCheck = new SqlCommand(@"SELECT Activo, CuposDisponibles, FechaSalida, HoraSalida
+                            using (SqlCommand cmdCheck = new SqlCommand(@"SELECT Activo, CuposDisponibles, FechaSalida, HoraSalida
 FROM Vuelos WITH (UPDLOCK, ROWLOCK)
 WHERE IdVuelo = @IdVuelo", cn, tran))
                             {
                                 cmdCheck.Parameters.AddWithValue("@IdVuelo", detalle.IdVuelo);
-                                using (var rdr = cmdCheck.ExecuteReader())
+                                using (SqlDataReader rdr = cmdCheck.ExecuteReader())
                                 {
                                     if (!rdr.Read())
                                         throw new Exception(string.Format("Vuelo {0} no encontrado.", detalle.IdVuelo));
 
-                                    var activo = Convert.ToBoolean(rdr["Activo"]);
-                                    var cupos = Convert.ToInt32(rdr["CuposDisponibles"]);
-                                    var fechaSalida = Convert.ToDateTime(rdr["FechaSalida"]);
-                                    var horaSalida = (TimeSpan)rdr["HoraSalida"];
-                                    var fechaHoraSalida = fechaSalida.Date.Add(horaSalida);
+                                    bool activo = Convert.ToBoolean(rdr["Activo"]);
+                                    int cupos = Convert.ToInt32(rdr["CuposDisponibles"]);
+                                    DateTime fechaSalida = Convert.ToDateTime(rdr["FechaSalida"]);
+                                    TimeSpan horaSalida = (TimeSpan)rdr["HoraSalida"];
+                                    DateTime fechaHoraSalida = fechaSalida.Date.Add(horaSalida);
 
                                     if (!activo)
                                         throw new Exception(string.Format("El vuelo {0} no se encuentra activo.", detalle.IdVuelo));
@@ -65,7 +65,7 @@ WHERE IdVuelo = @IdVuelo", cn, tran))
                                 }
                             }
 
-                            using (var cmdUpdate = new SqlCommand(@"UPDATE Vuelos
+                            using (SqlCommand cmdUpdate = new SqlCommand(@"UPDATE Vuelos
 SET CuposDisponibles = CuposDisponibles - @Cantidad,
     FechaActualizacion = @FechaActualizacion
 WHERE IdVuelo = @IdVuelo
@@ -74,13 +74,13 @@ WHERE IdVuelo = @IdVuelo
                                 cmdUpdate.Parameters.AddWithValue("@Cantidad", detalle.Cantidad);
                                 cmdUpdate.Parameters.AddWithValue("@FechaActualizacion", DateTime.Now);
                                 cmdUpdate.Parameters.AddWithValue("@IdVuelo", detalle.IdVuelo);
-                                var rows = cmdUpdate.ExecuteNonQuery();
+                                int rows = cmdUpdate.ExecuteNonQuery();
                                 if (rows == 0)
                                     throw new Exception(string.Format("No fue posible reservar cupos para el vuelo {0}. Reintente la operación.", detalle.IdVuelo));
                             }
                             vuelosAfectados.Add(detalle.IdVuelo);
 
-                            using (var cmd = new SqlCommand(@"INSERT INTO ReservaDetalle (IdReservaCabecera, IdVuelo, Cantidad, PrecioUnitario, SubTotal, Estado, DVH)
+                            using (SqlCommand cmd = new SqlCommand(@"INSERT INTO ReservaDetalle (IdReservaCabecera, IdVuelo, Cantidad, PrecioUnitario, SubTotal, Estado, DVH)
 VALUES (@IdReservaCabecera, @IdVuelo, @Cantidad, @PrecioUnitario, @SubTotal, @Estado, 0);
 SELECT SCOPE_IDENTITY();", cn, tran))
                             {
@@ -94,10 +94,10 @@ SELECT SCOPE_IDENTITY();", cn, tran))
                             }
                         }
 
-                        var reservaPasajeroInsertados = new List<int>();
-                        foreach (var rp in pasajeros)
+                        List<int> reservaPasajeroInsertados = new List<int>();
+                        foreach (ReservaPasajero rp in pasajeros)
                         {
-                            using (var cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero, DVH)
+                            using (SqlCommand cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero, DVH)
 VALUES (@IdReservaCabecera, @IdPasajero, 0);
 SELECT SCOPE_IDENTITY();", cn, tran))
                             {
@@ -107,13 +107,13 @@ SELECT SCOPE_IDENTITY();", cn, tran))
                             }
                         }
 
-                        var integrity = new IntegrityService();
+                        IntegrityService integrity = new IntegrityService();
                         integrity.UpdateRecordDVH(cn, tran, "ReservaCabecera", idReservaCabecera);
-                        foreach (var detalleId in detallesInsertados)
+                        foreach (int detalleId in detallesInsertados)
                             integrity.UpdateRecordDVH(cn, tran, "ReservaDetalle", detalleId);
-                        foreach (var reservaPasajeroId in reservaPasajeroInsertados)
+                        foreach (int reservaPasajeroId in reservaPasajeroInsertados)
                             integrity.UpdateRecordDVH(cn, tran, "ReservaPasajero", reservaPasajeroId);
-                        foreach (var vueloId in vuelosAfectados)
+                        foreach (int vueloId in vuelosAfectados)
                             integrity.UpdateRecordDVH(cn, tran, "Vuelos", vueloId);
 
                         integrity.UpdateTableDVV(cn, tran, "ReservaCabecera");
@@ -135,12 +135,12 @@ SELECT SCOPE_IDENTITY();", cn, tran))
 
         public ReservaCabecera GetById(int idReservaCabecera)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM ReservaCabecera WHERE IdReservaCabecera = @IdReservaCabecera", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM ReservaCabecera WHERE IdReservaCabecera = @IdReservaCabecera", cn))
             {
                 cmd.Parameters.AddWithValue("@IdReservaCabecera", idReservaCabecera);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearCabecera(rdr);
@@ -152,13 +152,13 @@ SELECT SCOPE_IDENTITY();", cn, tran))
 
         public List<ReservaCabecera> GetByIdCliente(int idCliente)
         {
-            var res = new List<ReservaCabecera>();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM ReservaCabecera WHERE IdCliente = @IdCliente ORDER BY FechaReserva DESC", cn))
+            List<ReservaCabecera> res = new List<ReservaCabecera>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM ReservaCabecera WHERE IdCliente = @IdCliente ORDER BY FechaReserva DESC", cn))
             {
                 cmd.Parameters.AddWithValue("@IdCliente", idCliente);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     while (rdr.Read())
                         res.Add(MapearCabecera(rdr));
@@ -170,9 +170,9 @@ SELECT SCOPE_IDENTITY();", cn, tran))
 
         public List<ReservaCabecera> GetByIdPasajero(int idPasajero)
         {
-            var res = new List<ReservaCabecera>();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"SELECT DISTINCT rc.*
+            List<ReservaCabecera> res = new List<ReservaCabecera>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(@"SELECT DISTINCT rc.*
 FROM ReservaCabecera rc
 INNER JOIN ReservaPasajero rp ON rc.IdReservaCabecera = rp.IdReservaCabecera
 WHERE rp.IdPasajero = @IdPasajero
@@ -180,7 +180,7 @@ ORDER BY rc.FechaReserva DESC", cn))
             {
                 cmd.Parameters.AddWithValue("@IdPasajero", idPasajero);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     while (rdr.Read())
                         res.Add(MapearCabecera(rdr));
@@ -194,17 +194,17 @@ ORDER BY rc.FechaReserva DESC", cn))
         {
             if (!idUsuarioCancela.HasValue)
                 throw new System.Web.HttpException(403, "Debe identificarse para cancelar una reserva.");
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         string estado = null;
                         // Validación de pertenencia en la misma transacción que cancela.
                         // Se conserva el acceso de titular o pasajero vinculado de MisReservas.
-                        using (var cmdGet = new SqlCommand(@"SELECT rc.Estado FROM ReservaCabecera rc WITH (UPDLOCK, ROWLOCK)
+                        using (SqlCommand cmdGet = new SqlCommand(@"SELECT rc.Estado FROM ReservaCabecera rc WITH (UPDLOCK, ROWLOCK)
 WHERE rc.IdReservaCabecera = @Id AND (
  EXISTS (SELECT 1 FROM Clientes c WHERE c.IdCliente=rc.IdCliente AND c.IdUsuario=@Usuario)
  OR EXISTS (SELECT 1 FROM ReservaPasajero rp JOIN Pasajeros p ON p.IdPasajero=rp.IdPasajero
@@ -212,7 +212,7 @@ WHERE rc.IdReservaCabecera = @Id AND (
                         {
                             cmdGet.Parameters.AddWithValue("@Id", idReservaCabecera);
                             cmdGet.Parameters.AddWithValue("@Usuario", idUsuarioCancela.Value);
-                            var result = cmdGet.ExecuteScalar();
+                            object result = cmdGet.ExecuteScalar();
                             if (result == null)
                             {
                                 tran.Rollback();
@@ -228,12 +228,12 @@ WHERE rc.IdReservaCabecera = @Id AND (
                             return 0;
                         }
 
-                        var detalles = new List<Tuple<int, int, int>>();
-                        using (var cmdDetalles = new SqlCommand("SELECT IdReservaDetalle, IdVuelo, Cantidad FROM ReservaDetalle WHERE IdReservaCabecera = @Id AND Estado = @Estado", cn, tran))
+                        List<Tuple<int, int, int>> detalles = new List<Tuple<int, int, int>>();
+                        using (SqlCommand cmdDetalles = new SqlCommand("SELECT IdReservaDetalle, IdVuelo, Cantidad FROM ReservaDetalle WHERE IdReservaCabecera = @Id AND Estado = @Estado", cn, tran))
                         {
                             cmdDetalles.Parameters.AddWithValue("@Id", idReservaCabecera);
                             cmdDetalles.Parameters.AddWithValue("@Estado", "Activo");
-                            using (var rdr = cmdDetalles.ExecuteReader())
+                            using (SqlDataReader rdr = cmdDetalles.ExecuteReader())
                             {
                                 while (rdr.Read())
                                 {
@@ -245,8 +245,8 @@ WHERE rc.IdReservaCabecera = @Id AND (
                             }
                         }
 
-                        var ahora = DateTime.Now;
-                        using (var cmdUpd = new SqlCommand(@"UPDATE ReservaCabecera
+                        DateTime ahora = DateTime.Now;
+                        using (SqlCommand cmdUpd = new SqlCommand(@"UPDATE ReservaCabecera
 SET Estado = @Estado,
     FechaActualizacion = @FechaActualizacion,
     FechaCancelacion = @FechaCancelacion,
@@ -261,7 +261,7 @@ WHERE IdReservaCabecera = @Id", cn, tran))
                             cmdUpd.ExecuteNonQuery();
                         }
 
-                        using (var cmdDetalles = new SqlCommand(@"UPDATE ReservaDetalle
+                        using (SqlCommand cmdDetalles = new SqlCommand(@"UPDATE ReservaDetalle
 SET Estado = @Estado
 WHERE IdReservaCabecera = @Id AND Estado = @EstadoActual", cn, tran))
                         {
@@ -271,9 +271,9 @@ WHERE IdReservaCabecera = @Id AND Estado = @EstadoActual", cn, tran))
                             cmdDetalles.ExecuteNonQuery();
                         }
 
-                        foreach (var detalle in detalles)
+                        foreach (Tuple<int, int, int> detalle in detalles)
                         {
-                            using (var cmdSeats = new SqlCommand(@"UPDATE Vuelos
+                            using (SqlCommand cmdSeats = new SqlCommand(@"UPDATE Vuelos
 SET CuposDisponibles = CuposDisponibles + @Cantidad,
     FechaActualizacion = @FechaActualizacion
 WHERE IdVuelo = @IdVuelo", cn, tran))
@@ -285,9 +285,9 @@ WHERE IdVuelo = @IdVuelo", cn, tran))
                             }
                         }
 
-                        var integrity = new IntegrityService();
+                        IntegrityService integrity = new IntegrityService();
                         integrity.UpdateRecordDVH(cn, tran, "ReservaCabecera", idReservaCabecera);
-                        foreach (var detalle in detalles)
+                        foreach (Tuple<int, int, int> detalle in detalles)
                         {
                             integrity.UpdateRecordDVH(cn, tran, "ReservaDetalle", detalle.Item1);
                             integrity.UpdateRecordDVH(cn, tran, "Vuelos", detalle.Item2);

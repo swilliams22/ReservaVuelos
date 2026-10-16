@@ -10,12 +10,12 @@ namespace ReservaVuelos.DAL
         private readonly EncryptionService _encryptionService = new EncryptionService();
         public Cliente GetByIdUsuario(int idUsuario)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Clientes WHERE IdUsuario = @IdUsuario", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Clientes WHERE IdUsuario = @IdUsuario", cn))
             {
                 cmd.Parameters.AddWithValue("@IdUsuario", idUsuario);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearCliente(rdr);
@@ -27,12 +27,12 @@ namespace ReservaVuelos.DAL
 
         public Cliente GetById(int idCliente)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Clientes WHERE IdCliente = @IdCliente", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Clientes WHERE IdCliente = @IdCliente", cn))
             {
                 cmd.Parameters.AddWithValue("@IdCliente", idCliente);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearCliente(rdr);
@@ -44,15 +44,15 @@ namespace ReservaVuelos.DAL
 
         public int Create(Cliente c)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int id;
-                        using (var cmd = new SqlCommand(@"INSERT INTO Clientes (IdUsuario, Nombre, Email, Documento, Telefono, Direccion, FechaAlta, FechaActualizacion, DVH)
+                        using (SqlCommand cmd = new SqlCommand(@"INSERT INTO Clientes (IdUsuario, Nombre, Email, Documento, Telefono, Direccion, FechaAlta, FechaActualizacion, DVH)
 VALUES (@IdUsuario, @Nombre, @Email, @Documento, @Telefono, @Direccion, @FechaAlta, @FechaActualizacion, 0); SELECT SCOPE_IDENTITY();", cn, tran))
                         {
                             cmd.Parameters.AddWithValue("@IdUsuario", c.IdUsuario);
@@ -81,15 +81,15 @@ VALUES (@IdUsuario, @Nombre, @Email, @Documento, @Telefono, @Direccion, @FechaAl
 
         public int Update(Cliente c)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int rows;
-                        using (var cmd = new SqlCommand(@"UPDATE Clientes
+                        using (SqlCommand cmd = new SqlCommand(@"UPDATE Clientes
 SET Nombre = @Nombre,
     Email = @Email,
     Documento = @Documento,
@@ -147,7 +147,7 @@ WHERE IdCliente = @IdCliente", cn, tran))
         private string DecryptOrNull(object dbValue)
         {
             if (dbValue == DBNull.Value || dbValue == null) return null;
-            var value = dbValue.ToString();
+            string value = dbValue.ToString();
             if (string.IsNullOrWhiteSpace(value)) return string.Empty;
             return _encryptionService.Decrypt(value);
         }

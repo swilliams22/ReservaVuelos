@@ -38,7 +38,7 @@ namespace ReservaVuelos.BE
         private static bool Contiene(PermisoComponente nodo, PermisoComponente buscado)
         {
             if (ReferenceEquals(nodo, buscado)) return true;
-            var grupo = nodo as GrupoPermisos;
+            GrupoPermisos grupo = nodo as GrupoPermisos;
             return grupo != null && grupo.hijos.Any(h => Contiene(h, buscado));
         }
         public override bool TienePermiso(string codigo)

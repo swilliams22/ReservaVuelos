@@ -44,10 +44,10 @@ namespace ReservaVuelos.Servicios
 
         public byte[] Exportar(IEnumerable<Vuelo> vuelos)
         {
-            var lista = vuelos.ToList();
-            using (var ms = new MemoryStream())
+            List<Vuelo> lista = vuelos.ToList();
+            using (MemoryStream ms = new MemoryStream())
             {
-                var writer = new XmlTextWriter(ms, new UTF8Encoding(false));
+                XmlTextWriter writer = new XmlTextWriter(ms, new UTF8Encoding(false));
                 writer.Formatting = Formatting.Indented;
                 writer.Indentation = 2;
 
@@ -56,7 +56,7 @@ namespace ReservaVuelos.Servicios
                 writer.WriteAttributeString("generado", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss", CultureInfo.InvariantCulture));
                 writer.WriteAttributeString("cantidad", lista.Count.ToString(CultureInfo.InvariantCulture));
 
-                foreach (var v in lista)
+                foreach (Vuelo v in lista)
                 {
                     writer.WriteStartElement("vuelo");
                     writer.WriteAttributeString("id", v.IdVuelo.ToString(CultureInfo.InvariantCulture));
@@ -86,20 +86,20 @@ namespace ReservaVuelos.Servicios
         /// </summary>
         public ResultadoImportacion Importar(Stream contenido, VueloBLL vueloBLL)
         {
-            var registros = LeerRegistros(contenido);
-            var resultado = new ResultadoImportacion { Total = registros.Count };
+            List<Dictionary<string, string>> registros = LeerRegistros(contenido);
+            ResultadoImportacion resultado = new ResultadoImportacion { Total = registros.Count };
 
             // Para no duplicar: vuelos activos que ya existen (misma ruta, fecha y hora) y los ya cargados desde este archivo.
-            var existentes = new HashSet<string>(
+            HashSet<string> existentes = new HashSet<string>(
                 vueloBLL.Search(null, null, null, "Todos").Where(v => v.Activo).Select(Clave));
 
             for (int i = 0; i < registros.Count; i++)
             {
-                var r = registros[i];
-                var etiqueta = "Vuelo " + (i + 1) + " (" + Valor(r, "origen") + " -> " + Valor(r, "destino") + ")";
+                Dictionary<string, string> r = registros[i];
+                string etiqueta = "Vuelo " + (i + 1) + " (" + Valor(r, "origen") + " -> " + Valor(r, "destino") + ")";
                 try
                 {
-                    var vuelo = Convertir(r);
+                    Vuelo vuelo = Convertir(r);
                     if (!existentes.Add(Clave(vuelo)))
                         throw new ArgumentException("Ya existe un vuelo activo con el mismo origen, destino, fecha y hora.");
 
@@ -142,12 +142,12 @@ namespace ReservaVuelos.Servicios
 
         private static Vuelo Convertir(Dictionary<string, string> r)
         {
-            var origen = Requerido(r, "origen");
-            var destino = Requerido(r, "destino");
-            var fecha = Requerido(r, "fecha");
-            var hora = Requerido(r, "hora");
-            var precio = Requerido(r, "precio");
-            var cupos = Requerido(r, "cupos");
+            string origen = Requerido(r, "origen");
+            string destino = Requerido(r, "destino");
+            string fecha = Requerido(r, "fecha");
+            string hora = Requerido(r, "hora");
+            string precio = Requerido(r, "precio");
+            string cupos = Requerido(r, "cupos");
 
             if (origen.Length > 100 || destino.Length > 100)
                 throw new ArgumentException("Origen y destino admiten hasta 100 caracteres.");
@@ -186,10 +186,10 @@ namespace ReservaVuelos.Servicios
         /// </summary>
         private static List<Dictionary<string, string>> LeerRegistros(Stream contenido)
         {
-            var registros = new List<Dictionary<string, string>>();
+            List<Dictionary<string, string>> registros = new List<Dictionary<string, string>>();
             try
             {
-                using (var lector = new XmlTextReader(contenido))
+                using (XmlTextReader lector = new XmlTextReader(contenido))
                 {
                     lector.DtdProcessing = DtdProcessing.Prohibit;   // sin DTD: evita ataques XXE
                     lector.XmlResolver = null;
@@ -217,7 +217,7 @@ namespace ReservaVuelos.Servicios
                             }
                             else if (actual != null && lector.Depth == 2 && Array.IndexOf(CAMPOS, lector.Name) >= 0)
                             {
-                                var campo = lector.Name;
+                                string campo = lector.Name;
                                 if (actual.ContainsKey(campo))
                                     throw new FormatException("El vuelo " + registros.Count + " repite el campo <" + campo + ">.");
                                 actual[campo] = lector.ReadString();   // deja el lector en el cierre del campo

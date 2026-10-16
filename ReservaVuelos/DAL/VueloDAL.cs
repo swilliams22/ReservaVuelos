@@ -10,10 +10,10 @@ namespace ReservaVuelos.DAL
     {
         public List<Vuelo> Search(string origen, string destino, DateTime? fecha, string estado = "Activos", DateTime? fechaMinima = null)
         {
-            var res = new List<Vuelo>();
-            using (var cn = ConexionDAL.GetConnection())
+            List<Vuelo> res = new List<Vuelo>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
-                var sql = @"SELECT *
+                string sql = @"SELECT *
 FROM Vuelos
 WHERE (@Origen IS NULL OR Origen COLLATE Latin1_General_100_CI_AI LIKE @OrigenLike)
   AND (@Destino IS NULL OR Destino COLLATE Latin1_General_100_CI_AI LIKE @DestinoLike)
@@ -35,7 +35,7 @@ WHERE (@Origen IS NULL OR Origen COLLATE Latin1_General_100_CI_AI LIKE @OrigenLi
 
                 sql += " ORDER BY FechaSalida ASC, HoraSalida ASC";
 
-                using (var cmd = new SqlCommand(sql, cn))
+                using (SqlCommand cmd = new SqlCommand(sql, cn))
                 {
                     cmd.Parameters.AddWithValue("@Origen", string.IsNullOrWhiteSpace(origen) ? (object)DBNull.Value : origen);
                     cmd.Parameters.AddWithValue("@OrigenLike", string.IsNullOrWhiteSpace(origen) ? (object)DBNull.Value : ("%" + origen.Trim() + "%"));
@@ -45,7 +45,7 @@ WHERE (@Origen IS NULL OR Origen COLLATE Latin1_General_100_CI_AI LIKE @OrigenLi
                     cmd.Parameters.AddWithValue("@FechaMinima", fechaMinima.HasValue ? (object)fechaMinima.Value.Date : DBNull.Value);
                     cmd.Parameters.AddWithValue("@Ahora", DateTime.Now);
                     cn.Open();
-                    using (var rdr = cmd.ExecuteReader())
+                    using (SqlDataReader rdr = cmd.ExecuteReader())
                     {
                         while (rdr.Read())
                         {
@@ -60,12 +60,12 @@ WHERE (@Origen IS NULL OR Origen COLLATE Latin1_General_100_CI_AI LIKE @OrigenLi
 
         public Vuelo GetById(int id)
         {
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM Vuelos WHERE IdVuelo = @Id", cn))
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Vuelos WHERE IdVuelo = @Id", cn))
             {
                 cmd.Parameters.AddWithValue("@Id", id);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
                         return MapearVuelo(rdr);
@@ -77,15 +77,15 @@ WHERE (@Origen IS NULL OR Origen COLLATE Latin1_General_100_CI_AI LIKE @OrigenLi
 
         public int Create(Vuelo v)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int id;
-                        using (var cmd = new SqlCommand(@"INSERT INTO Vuelos (Origen, Destino, FechaSalida, HoraSalida, Precio, CuposDisponibles, Activo, FechaCreacion, FechaActualizacion, DVH)
+                        using (SqlCommand cmd = new SqlCommand(@"INSERT INTO Vuelos (Origen, Destino, FechaSalida, HoraSalida, Precio, CuposDisponibles, Activo, FechaCreacion, FechaActualizacion, DVH)
 VALUES (@Origen, @Destino, @FechaSalida, @HoraSalida, @Precio, @CuposDisponibles, @Activo, @FechaCreacion, @FechaActualizacion, 0);
 SELECT SCOPE_IDENTITY();", cn, tran))
                         {
@@ -116,14 +116,14 @@ SELECT SCOPE_IDENTITY();", cn, tran))
 
         public void UpdateSeats(int idVuelo, int delta)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
-                        using (var cmd = new SqlCommand(@"UPDATE Vuelos
+                        using (SqlCommand cmd = new SqlCommand(@"UPDATE Vuelos
 SET CuposDisponibles = CuposDisponibles + @Delta,
     FechaActualizacion = @FechaActualizacion
 WHERE IdVuelo = @Id", cn, tran))
@@ -148,14 +148,14 @@ WHERE IdVuelo = @Id", cn, tran))
 
         public int SoftDelete(int id)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
-                        using (var cmdCheck = new SqlCommand("SELECT COUNT(1) FROM Vuelos WHERE IdVuelo = @Id", cn, tran))
+                        using (SqlCommand cmdCheck = new SqlCommand("SELECT COUNT(1) FROM Vuelos WHERE IdVuelo = @Id", cn, tran))
                         {
                             cmdCheck.Parameters.AddWithValue("@Id", id);
                             if (Convert.ToInt32(cmdCheck.ExecuteScalar()) == 0)
@@ -165,7 +165,7 @@ WHERE IdVuelo = @Id", cn, tran))
                             }
                         }
 
-                        using (var cmdUpd = new SqlCommand(@"UPDATE Vuelos
+                        using (SqlCommand cmdUpd = new SqlCommand(@"UPDATE Vuelos
 SET Activo = 0,
     FechaActualizacion = @FechaActualizacion
 WHERE IdVuelo = @Id", cn, tran))
@@ -175,15 +175,15 @@ WHERE IdVuelo = @Id", cn, tran))
                             cmdUpd.ExecuteNonQuery();
                         }
 
-                        var detallesAfectados = new List<Tuple<int, int, int>>();
-                        var reservasProcesadas = new HashSet<int>();
-                        using (var cmdDetalles = new SqlCommand(@"SELECT IdReservaDetalle, IdReservaCabecera, Cantidad
+                        List<Tuple<int, int, int>> detallesAfectados = new List<Tuple<int, int, int>>();
+                        HashSet<int> reservasProcesadas = new HashSet<int>();
+                        using (SqlCommand cmdDetalles = new SqlCommand(@"SELECT IdReservaDetalle, IdReservaCabecera, Cantidad
 FROM ReservaDetalle
 WHERE IdVuelo = @IdVuelo AND Estado = @Estado", cn, tran))
                         {
                             cmdDetalles.Parameters.AddWithValue("@IdVuelo", id);
                             cmdDetalles.Parameters.AddWithValue("@Estado", "Activo");
-                            using (var rdr = cmdDetalles.ExecuteReader())
+                            using (SqlDataReader rdr = cmdDetalles.ExecuteReader())
                             {
                                 while (rdr.Read())
                                 {
@@ -197,7 +197,7 @@ WHERE IdVuelo = @IdVuelo AND Estado = @Estado", cn, tran))
 
                         if (detallesAfectados.Count > 0)
                         {
-                            using (var cmdCancelDetalles = new SqlCommand(@"UPDATE ReservaDetalle
+                            using (SqlCommand cmdCancelDetalles = new SqlCommand(@"UPDATE ReservaDetalle
 SET Estado = @EstadoCancelado
 WHERE IdVuelo = @IdVuelo AND Estado = @EstadoActivo", cn, tran))
                             {
@@ -207,9 +207,9 @@ WHERE IdVuelo = @IdVuelo AND Estado = @EstadoActivo", cn, tran))
                                 cmdCancelDetalles.ExecuteNonQuery();
                             }
 
-                            var ahora = DateTime.Now;
+                            DateTime ahora = DateTime.Now;
                             int cuposADevolver = 0;
-                            foreach (var detalle in detallesAfectados)
+                            foreach (Tuple<int, int, int> detalle in detallesAfectados)
                             {
                                 cuposADevolver += detalle.Item3;
 
@@ -217,7 +217,7 @@ WHERE IdVuelo = @IdVuelo AND Estado = @EstadoActivo", cn, tran))
                                     continue;
 
                                 reservasProcesadas.Add(detalle.Item2);
-                                using (var cmdActivos = new SqlCommand(@"SELECT COUNT(1)
+                                using (SqlCommand cmdActivos = new SqlCommand(@"SELECT COUNT(1)
 FROM ReservaDetalle
 WHERE IdReservaCabecera = @IdReservaCabecera AND Estado = @EstadoActivo", cn, tran))
                                 {
@@ -225,7 +225,7 @@ WHERE IdReservaCabecera = @IdReservaCabecera AND Estado = @EstadoActivo", cn, tr
                                     cmdActivos.Parameters.AddWithValue("@EstadoActivo", "Activo");
                                     if (Convert.ToInt32(cmdActivos.ExecuteScalar()) == 0)
                                     {
-                                        using (var cmdCabecera = new SqlCommand(@"UPDATE ReservaCabecera
+                                        using (SqlCommand cmdCabecera = new SqlCommand(@"UPDATE ReservaCabecera
 SET Estado = @Estado,
     FechaActualizacion = @FechaActualizacion,
     FechaCancelacion = ISNULL(FechaCancelacion, @FechaCancelacion)
@@ -243,7 +243,7 @@ WHERE IdReservaCabecera = @IdReservaCabecera AND Estado <> @Estado", cn, tran))
 
                             if (cuposADevolver > 0)
                             {
-                                using (var cmdSeats = new SqlCommand(@"UPDATE Vuelos
+                                using (SqlCommand cmdSeats = new SqlCommand(@"UPDATE Vuelos
 SET CuposDisponibles = CuposDisponibles + @Cantidad,
     FechaActualizacion = @FechaActualizacion
 WHERE IdVuelo = @IdVuelo", cn, tran))
@@ -256,14 +256,14 @@ WHERE IdVuelo = @IdVuelo", cn, tran))
                             }
                         }
 
-                        var integrity = new IntegrityService();
+                        IntegrityService integrity = new IntegrityService();
                         integrity.UpdateRecordAndTableDVV(cn, tran, "Vuelos", id);
-                        foreach (var detalle in detallesAfectados)
+                        foreach (Tuple<int, int, int> detalle in detallesAfectados)
                         {
                             integrity.UpdateRecordDVH(cn, tran, "ReservaDetalle", detalle.Item1);
                         }
 
-                        foreach (var reservaId in reservasProcesadas)
+                        foreach (int reservaId in reservasProcesadas)
                         {
                             integrity.UpdateRecordDVH(cn, tran, "ReservaCabecera", reservaId);
                         }

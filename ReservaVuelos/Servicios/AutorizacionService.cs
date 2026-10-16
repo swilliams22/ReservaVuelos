@@ -13,9 +13,9 @@ namespace ReservaVuelos.Servicios
         public static bool TienePermiso(Usuario usuario, string codigo)
         {
             if (usuario == null || !usuario.Activo || string.IsNullOrWhiteSpace(codigo)) return false;
-            var contexto = HttpContext.Current;
+            HttpContext contexto = HttpContext.Current;
             string clave = ClaveArbol + ":" + usuario.IdUsuario + ":" + usuario.Rol;
-            var arbol = contexto == null ? null : contexto.Items[clave] as PermisoComponente;
+            PermisoComponente arbol = contexto == null ? null : contexto.Items[clave] as PermisoComponente;
             if (arbol == null)
             {
                 arbol = new PermisoDAL().ObtenerPorRol(usuario.Rol);
@@ -32,11 +32,11 @@ namespace ReservaVuelos.Servicios
 
         public static void ControlarPeticion(HttpContext contexto)
         {
-            var pagina = contexto.CurrentHandler as Page;
+            Page pagina = contexto.CurrentHandler as Page;
             if (pagina == null) return; // SOAP aplica su política en cada operación.
 
             // Refrescar rol y estado una vez por petición. Nunca confiar en el rol de una sesión vieja.
-            var anterior = SesionService.GetUser();
+            Usuario anterior = SesionService.GetUser();
             Usuario usuario = null;
             if (anterior != null)
             {
@@ -64,7 +64,7 @@ namespace ReservaVuelos.Servicios
             }
 
             // Antes del ciclo de vida de Page: también frena postbacks y acciones durante contingencia.
-            var integridad = new IntegrityService();
+            IntegrityService integridad = new IntegrityService();
             if (!integridad.CanAccessDuringContingency(pagina.AppRelativeVirtualPath, usuario))
             {
                 string destino = SesionService.IsWebMaster(usuario) ? "~/GestionIntegridad.aspx" : "~/Mantenimiento.aspx";

@@ -11,15 +11,15 @@ namespace ReservaVuelos.DAL
         private readonly EncryptionService _encryptionService = new EncryptionService();
         public int Create(ReservaPasajero rp)
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                using (var tran = cn.BeginTransaction())
+                using (SqlTransaction tran = cn.BeginTransaction())
                 {
                     try
                     {
                         int id;
-                        using (var cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero, DVH)
+                        using (SqlCommand cmd = new SqlCommand(@"INSERT INTO ReservaPasajero (IdReservaCabecera, IdPasajero, DVH)
 VALUES (@IdReservaCabecera, @IdPasajero, 0); SELECT SCOPE_IDENTITY();", cn, tran))
                         {
                             cmd.Parameters.AddWithValue("@IdReservaCabecera", rp.IdReservaCabecera);
@@ -42,13 +42,13 @@ VALUES (@IdReservaCabecera, @IdPasajero, 0); SELECT SCOPE_IDENTITY();", cn, tran
 
         public List<ReservaPasajero> GetByReservaCabecera(int idReservaCabecera)
         {
-            var res = new List<ReservaPasajero>();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand("SELECT * FROM ReservaPasajero WHERE IdReservaCabecera = @IdReservaCabecera", cn))
+            List<ReservaPasajero> res = new List<ReservaPasajero>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM ReservaPasajero WHERE IdReservaCabecera = @IdReservaCabecera", cn))
             {
                 cmd.Parameters.AddWithValue("@IdReservaCabecera", idReservaCabecera);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     while (rdr.Read())
                     {
@@ -67,16 +67,16 @@ VALUES (@IdReservaCabecera, @IdPasajero, 0); SELECT SCOPE_IDENTITY();", cn, tran
 
         public List<Pasajero> GetPasajerosByReservaCabecera(int idReservaCabecera)
         {
-            var res = new List<Pasajero>();
-            using (var cn = ConexionDAL.GetConnection())
-            using (var cmd = new SqlCommand(@"SELECT p.* FROM Pasajeros p
+            List<Pasajero> res = new List<Pasajero>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand(@"SELECT p.* FROM Pasajeros p
 INNER JOIN ReservaPasajero rp ON p.IdPasajero = rp.IdPasajero
 WHERE rp.IdReservaCabecera = @IdReservaCabecera
 ORDER BY p.Nombre, p.Apellido, p.Documento", cn))
             {
                 cmd.Parameters.AddWithValue("@IdReservaCabecera", idReservaCabecera);
                 cn.Open();
-                using (var rdr = cmd.ExecuteReader())
+                using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
                     while (rdr.Read())
                     {
@@ -103,7 +103,7 @@ ORDER BY p.Nombre, p.Apellido, p.Documento", cn))
         private string DecryptOrNull(object dbValue)
         {
             if (dbValue == DBNull.Value || dbValue == null) return null;
-            var value = dbValue.ToString();
+            string value = dbValue.ToString();
             if (string.IsNullOrWhiteSpace(value)) return string.Empty;
             return _encryptionService.Decrypt(value);
         }

@@ -21,7 +21,7 @@ namespace ReservaVuelos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (!AutorizacionService.TienePermiso(user, Permisos.VerIdiomas))
             {
                 Response.Redirect("Login.aspx");
@@ -44,10 +44,10 @@ namespace ReservaVuelos
         protected void gvIdiomas_RowDataBound(object sender, GridViewRowEventArgs e)
         {
             if (e.Row.RowType != DataControlRowType.DataRow) return;
-            var idioma = (Idioma)e.Row.DataItem;
+            Idioma idioma = (Idioma)e.Row.DataItem;
 
             // La clave va en data-i18n: BasePage la traduce al mostrar la página (también si cambia el idioma).
-            var lblEstado = (Label)e.Row.FindControl("lblEstado");
+            Label lblEstado = (Label)e.Row.FindControl("lblEstado");
             string clave = idioma.EsDefault ? "idiomas.estado.default" : idioma.Activo ? "idiomas.estado.activo" : "idiomas.estado.inactivo";
             lblEstado.Attributes[Traductor.ATRIBUTO] = clave;
             lblEstado.Text = idioma.EsDefault ? "Por defecto" : idioma.Activo ? "Activo" : "Inactivo";
@@ -55,10 +55,10 @@ namespace ReservaVuelos
             ((Label)e.Row.FindControl("lblProgreso")).Text =
                 idioma.Traducidas + " / " + idioma.Total + " (" + idioma.Porcentaje + "%)";
 
-            var id = idioma.IdIdioma.ToString();
-            var btnEditar = (Button)e.Row.FindControl("btnEditar");
-            var btnActivar = (Button)e.Row.FindControl("btnActivar");
-            var btnDesactivar = (Button)e.Row.FindControl("btnDesactivar");
+            string id = idioma.IdIdioma.ToString();
+            Button btnEditar = (Button)e.Row.FindControl("btnEditar");
+            Button btnActivar = (Button)e.Row.FindControl("btnActivar");
+            Button btnDesactivar = (Button)e.Row.FindControl("btnDesactivar");
             btnEditar.CommandArgument = id;
             btnActivar.CommandArgument = id;
             btnDesactivar.CommandArgument = id;
@@ -74,7 +74,7 @@ namespace ReservaVuelos
             int idIdioma;
             if (!int.TryParse(Convert.ToString(e.CommandArgument), out idIdioma)) return;
 
-            var idioma = _bll.GetTodos().FirstOrDefault(i => i.IdIdioma == idIdioma);
+            Idioma idioma = _bll.GetTodos().FirstOrDefault(i => i.IdIdioma == idIdioma);
             if (idioma == null) return;
 
             lblMsg.Text = "";
@@ -116,7 +116,7 @@ namespace ReservaVuelos
             try
             {
                 Idioma creado;
-                var error = _bll.Crear(txtCodigo.Text, txtNombre.Text, out creado);
+                string error = _bll.Crear(txtCodigo.Text, txtNombre.Text, out creado);
                 if (error != null)
                 {
                     Mensaje("idiomas.msg.crear." + error, true);
@@ -146,7 +146,7 @@ namespace ReservaVuelos
 
             ddlPantalla.Items.Clear();
             ddlPantalla.Items.Add(new ListItem(T("idiomas.todas"), ""));
-            foreach (var p in _bll.GetPantallas())
+            foreach (string p in _bll.GetPantallas())
                 ddlPantalla.Items.Add(new ListItem(p, p));
             chkPendientes.Checked = false;
 
@@ -163,7 +163,7 @@ namespace ReservaVuelos
 
         private void CargarEtiquetas()
         {
-            var idioma = IdiomaEnEdicion();
+            Idioma idioma = IdiomaEnEdicion();
             if (idioma == null) { pnlEditar.Visible = false; return; }
 
             gvEtiquetas.DataSource = _bll.GetEtiquetas(idioma, ddlPantalla.SelectedValue, chkPendientes.Checked);
@@ -180,13 +180,13 @@ namespace ReservaVuelos
         {
             AutorizacionService.Exigir(Permisos.EditarIdiomas);
             lblMsg.Text = "";
-            var idioma = IdiomaEnEdicion();
+            Idioma idioma = IdiomaEnEdicion();
             if (idioma == null) return;
 
-            var textos = new Dictionary<int, string>();
+            Dictionary<int, string> textos = new Dictionary<int, string>();
             foreach (GridViewRow fila in gvEtiquetas.Rows)
             {
-                var txt = (TextBox)fila.FindControl("txtTexto");
+                TextBox txt = (TextBox)fila.FindControl("txtTexto");
                 textos[Convert.ToInt32(gvEtiquetas.DataKeys[fila.RowIndex].Value)] = txt.Text;
             }
 

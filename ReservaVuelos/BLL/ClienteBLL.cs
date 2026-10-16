@@ -40,11 +40,11 @@ namespace ReservaVuelos.BLL
 
         public Cliente GetOrCreateByUsuario(int idUsuario, string nombre, string email, string documento = null)
         {
-            var cliente = GetByIdUsuario(idUsuario);
+            Cliente cliente = GetByIdUsuario(idUsuario);
             if (cliente != null)
                 return cliente;
 
-            var nuevoCliente = new Cliente
+            Cliente nuevoCliente = new Cliente
             {
                 IdUsuario = idUsuario,
                 Nombre = nombre,
@@ -53,7 +53,7 @@ namespace ReservaVuelos.BLL
                 FechaAlta = DateTime.Now
             };
 
-            var idCliente = Create(nuevoCliente);
+            int idCliente = Create(nuevoCliente);
             nuevoCliente.IdCliente = idCliente;
             return nuevoCliente;
         }

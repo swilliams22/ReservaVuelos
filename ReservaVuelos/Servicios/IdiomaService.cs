@@ -1,4 +1,6 @@
-﻿using ReservaVuelos.BE;
+﻿using System.Web.SessionState;
+using System.Collections;
+using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using System;
 using System.Collections.Generic;
@@ -33,8 +35,8 @@ namespace ReservaVuelos.Servicios
         {
             get
             {
-                var items = HttpContext.Current.Items;
-                var servicio = items[KEY_INSTANCIA] as IdiomaService;
+                IDictionary items = HttpContext.Current.Items;
+                IdiomaService servicio = items[KEY_INSTANCIA] as IdiomaService;
                 if (servicio == null)
                 {
                     servicio = new IdiomaService();
@@ -49,8 +51,8 @@ namespace ReservaVuelos.Servicios
         {
             get
             {
-                var session = HttpContext.Current.Session;
-                var actual = session == null ? null : session[KEY_IDIOMA] as Idioma;
+                HttpSessionState session = HttpContext.Current.Session;
+                Idioma actual = session == null ? null : session[KEY_IDIOMA] as Idioma;
                 return actual ?? _bll.GetDefault();
             }
         }
@@ -70,8 +72,8 @@ namespace ReservaVuelos.Servicios
 
         public void Notificar()
         {
-            var idioma = IdiomaActual;
-            foreach (var observer in _observadores.ToList())
+            Idioma idioma = IdiomaActual;
+            foreach (IIdiomaObserver observer in _observadores.ToList())
                 observer.ActualizarIdioma(idioma);
         }
 
@@ -80,8 +82,8 @@ namespace ReservaVuelos.Servicios
         /// <summary>Cambia el idioma del usuario actual y avisa a todos los observers.</summary>
         public bool CambiarIdioma(string codigo)
         {
-            var idioma = _bll.GetByCodigo(codigo);
-            var session = HttpContext.Current.Session;
+            Idioma idioma = _bll.GetByCodigo(codigo);
+            HttpSessionState session = HttpContext.Current.Session;
             if (idioma == null || session == null) return false;
 
             session[KEY_IDIOMA] = idioma;
@@ -93,26 +95,26 @@ namespace ReservaVuelos.Servicios
         /// <summary>Al iniciar sesión: si el usuario tiene un idioma guardado, lo aplica.</summary>
         public void AplicarPreferenciaDeUsuario(Usuario usuario)
         {
-            var session = HttpContext.Current.Session;
+            HttpSessionState session = HttpContext.Current.Session;
             if (usuario == null || session == null) return;
 
-            var idIdioma = _bll.GetPreferencia(usuario.IdUsuario);
+            int? idIdioma = _bll.GetPreferencia(usuario.IdUsuario);
             if (!idIdioma.HasValue) return;
 
-            var idioma = _bll.GetById(idIdioma.Value);
+            Idioma idioma = _bll.GetById(idIdioma.Value);
             if (idioma != null) session[KEY_IDIOMA] = idioma;
         }
 
         private void GuardarPreferenciaYRegistrar(Idioma idioma)
         {
-            var usuario = SesionService.GetUser();
+            Usuario usuario = SesionService.GetUser();
             if (usuario == null) return;   // sin sesión iniciada solo cambia para esta visita
 
             try
             {
                 _bll.GuardarPreferencia(usuario.IdUsuario, idioma.IdIdioma);
 
-                var pantalla = Path.GetFileName(HttpContext.Current.Request.AppRelativeCurrentExecutionFilePath);
+                string pantalla = Path.GetFileName(HttpContext.Current.Request.AppRelativeCurrentExecutionFilePath);
                 new BitacoraBLL().Create(new ReservaVuelos.BE.Bitacora
                 {
                     Fecha = DateTime.Now,

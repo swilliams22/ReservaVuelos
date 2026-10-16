@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
@@ -14,7 +15,7 @@ namespace ReservaVuelos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (!AutorizacionService.TienePermiso(user, Permisos.VerVuelos))
             {
                 Response.Redirect("Login.aspx");
@@ -44,7 +45,7 @@ namespace ReservaVuelos
                 int id = Convert.ToInt32(e.CommandArgument);
                 try
                 {
-                    var canceledCount = _vBLL.SoftDelete(id);
+                    int canceledCount = _vBLL.SoftDelete(id);
                     if (canceledCount >= 0)
                     {
                         _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo dado de baja. IdVuelo: {id}", Criticidad = 1, Pantalla = "AdminVuelos" });
@@ -76,9 +77,9 @@ namespace ReservaVuelos
 
         private void BindGrid()
         {
-            var filtro = "Activos";
+            string filtro = "Activos";
             if (ddlFiltro != null) filtro = ddlFiltro.SelectedValue;
-            var lista = _vBLL.Search(null, null, null, filtro);
+            List<Vuelo> lista = _vBLL.Search(null, null, null, filtro);
             gvVuelosAdmin.DataSource = lista;
             gvVuelosAdmin.DataBind();
         }
@@ -88,7 +89,7 @@ namespace ReservaVuelos
             AutorizacionService.Exigir(Permisos.CrearVuelo);
             try
             {
-                var v = new Vuelo
+                Vuelo v = new Vuelo
                 {
                     Origen = txtOrigen.Text.Trim(),
                     Destino = txtDestino.Text.Trim(),
@@ -98,7 +99,7 @@ namespace ReservaVuelos
                     CuposDisponibles = int.Parse(txtCupos.Text),
                     Activo = true
                 };
-                var idVuelo = _vBLL.Create(v);
+                int idVuelo = _vBLL.Create(v);
                 _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo creado. IdVuelo: {idVuelo}", Criticidad = 1, Pantalla = "AdminVuelos" });
                 BindGrid();
                 lblMsg.ForeColor = System.Drawing.Color.Green;
@@ -115,7 +116,7 @@ namespace ReservaVuelos
         {
             AutorizacionService.Exigir(Permisos.ExportarVuelos);
             lblXmlResultado.ForeColor = System.Drawing.Color.Red;
-            var token = SesionService.GetTokenServicio();
+            string token = SesionService.GetTokenServicio();
             if (string.IsNullOrEmpty(token))
             {
                 lblXmlResultado.Text = "Cierre sesión y vuelva a ingresar para usar el web service.";
@@ -125,8 +126,8 @@ namespace ReservaVuelos
             try
             {
                 // El informe lo genera el web service (AeroLinkWS.ObtenerInformeVuelosXml), que también lo registra en la bitácora.
-                var filtro = ddlFiltro.SelectedValue;
-                var xml = AeroLinkCliente.Llamar(c => c.ObtenerInformeVuelosXml(token, filtro));
+                string filtro = ddlFiltro.SelectedValue;
+                string xml = AeroLinkCliente.Llamar(c => c.ObtenerInformeVuelosXml(token, filtro));
 
                 Response.Clear();
                 Response.ContentType = "application/xml";
@@ -157,7 +158,7 @@ namespace ReservaVuelos
                 lblXmlResultado.Text = "El archivo supera el máximo de " + (XmlVuelosService.MAX_BYTES / 1024) + " KB.";
                 return;
             }
-            var token = SesionService.GetTokenServicio();
+            string token = SesionService.GetTokenServicio();
             if (string.IsNullOrEmpty(token))
             {
                 lblXmlResultado.Text = "Cierre sesión y vuelva a ingresar para usar el web service.";
@@ -167,11 +168,11 @@ namespace ReservaVuelos
             try
             {
                 string xml;
-                using (var lector = new System.IO.StreamReader(fuXml.PostedFile.InputStream, Encoding.UTF8))
+                using (System.IO.StreamReader lector = new System.IO.StreamReader(fuXml.PostedFile.InputStream, Encoding.UTF8))
                     xml = lector.ReadToEnd();
 
                 // La importación la hace el web service (AeroLinkWS.ImportarVuelosXml), que también la registra en la bitácora.
-                var r = AeroLinkCliente.Llamar(c => c.ImportarVuelosXml(token, xml));
+                ReservaVuelos.AeroLinkServiceReference.ResultadoImportacionWS r = AeroLinkCliente.Llamar(c => c.ImportarVuelosXml(token, xml));
                 if (!r.Exitoso)
                 {
                     lblXmlResultado.Text = Server.HtmlEncode(r.Mensaje);
@@ -180,9 +181,9 @@ namespace ReservaVuelos
 
                 BindGrid();
 
-                var sb = new StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 sb.Append(Server.HtmlEncode($"Vuelos en el archivo: {r.Total}. Importados: {r.Importados}. Rechazados: {r.Rechazados.Count}."));
-                foreach (var motivo in r.Rechazados)
+                foreach (string motivo in r.Rechazados)
                     sb.Append("<br />").Append(Server.HtmlEncode(motivo));
                 lblXmlResultado.Text = sb.ToString();
                 lblXmlResultado.ForeColor = r.Rechazados.Count == 0 ? System.Drawing.Color.Green

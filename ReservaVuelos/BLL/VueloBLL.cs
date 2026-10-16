@@ -38,7 +38,7 @@ namespace ReservaVuelos.BLL
         public void UpdateSeats(int idVuelo, int delta) => _dal.UpdateSeats(idVuelo, delta);
         public int SoftDelete(int id)
         {
-            var integrity = new IntegrityService();
+            IntegrityService integrity = new IntegrityService();
             integrity.EnsureAllTablesAreValid();
             return _dal.SoftDelete(id);
         }

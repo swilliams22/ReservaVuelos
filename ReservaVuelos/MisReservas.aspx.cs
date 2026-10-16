@@ -9,15 +9,20 @@ using System.Web.UI.WebControls;
 
 namespace ReservaVuelos
 {
-    public partial class MisReservas : System.Web.UI.Page
+    public partial class MisReservas : BasePage
     {
+        protected override string ClaveTitulo
+        {
+            get { return "misreservas.titulo"; }
+        }
+
         private ReservaCabeceraV2BLL _rBLL = new ReservaCabeceraV2BLL();
         private ClienteBLL _cBLL = new ClienteBLL();
         private PasajeroBLL _pBLL = new PasajeroBLL();
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (user == null)
             {
                 Response.Redirect("Login.aspx");
@@ -27,7 +32,7 @@ namespace ReservaVuelos
             if (!IsPostBack)
             {
                 // Mostrar mensaje si viene desde query string
-                var msg = Request.QueryString["msg"];
+                string msg = Request.QueryString["msg"];
                 if (!string.IsNullOrEmpty(msg))
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Green;
@@ -42,28 +47,28 @@ namespace ReservaVuelos
         {
             try
             {
-                var todasLasReservas = new List<ReservaCabecera>();
+                List<ReservaCabecera> todasLasReservas = new List<ReservaCabecera>();
 
                 // 1. Reservas como cliente
-                var cliente = _cBLL.GetByIdUsuario(idUsuario);
+                Cliente cliente = _cBLL.GetByIdUsuario(idUsuario);
                 if (cliente != null)
                 {
-                    var reservasCliente = _rBLL.GetByIdCliente(cliente.IdCliente);
+                    List<ReservaCabecera> reservasCliente = _rBLL.GetByIdCliente(cliente.IdCliente);
                     todasLasReservas.AddRange(reservasCliente);
                 }
 
                 // 2. Reservas como pasajero
-                var pasajero = _pBLL.FindByEmailOrDocumento(
+                Pasajero pasajero = _pBLL.FindByEmailOrDocumento(
                     SesionService.GetUser()?.Email, 
                     null // Si tienes documento en Usuario, pásalo aquí
                 );
 
                 if (pasajero != null && pasajero.IdUsuario.HasValue && pasajero.IdUsuario.Value == idUsuario)
                 {
-                    var reservasPasajero = _rBLL.GetByIdPasajero(pasajero.IdPasajero);
+                    List<ReservaCabecera> reservasPasajero = _rBLL.GetByIdPasajero(pasajero.IdPasajero);
 
                     // Evitar duplicados (si el usuario es cliente Y pasajero en la misma reserva)
-                    foreach (var rp in reservasPasajero)
+                    foreach (ReservaCabecera rp in reservasPasajero)
                     {
                         if (!todasLasReservas.Any(r => r.IdReservaCabecera == rp.IdReservaCabecera))
                         {
@@ -86,14 +91,26 @@ namespace ReservaVuelos
                 else
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Blue;
-                    lblMsg.Text = "Aún no tiene reservas registradas.";
+                    lblMsg.Text = T("misreservas.msg.sinReservas");
                 }
             }
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = "Error al cargar reservas: " + ex.Message;
+                lblMsg.Text = T("misreservas.msg.errorCargar") + ": " + ex.Message;
+            }
+        }
+
+        // Observer: al cambiar el idioma se vuelve a armar el texto del confirm de cada botón Cancelar.
+        public override void ActualizarIdioma(Idioma idioma)
+        {
+            base.ActualizarIdioma(idioma);
+            string confirmar = "return confirm('" + TJs("misreservas.msg.confirmarCancelar") + "');";
+            foreach (RepeaterItem item in rptReservas.Items)
+            {
+                Button btn = item.FindControl("btnCancelar") as Button;
+                if (btn != null) btn.OnClientClick = confirmar;
             }
         }
 
@@ -136,28 +153,28 @@ namespace ReservaVuelos
             if (e.CommandName == "Cancelar")
             {
                 int idReservaCabecera = Convert.ToInt32(e.CommandArgument);
-                var user = SesionService.GetUser();
+                Usuario user = SesionService.GetUser();
 
                 try
                 {
-                    var ok = _rBLL.Cancel(idReservaCabecera, user);
+                    bool ok = _rBLL.Cancel(idReservaCabecera, user);
                     if (ok)
                     {
                         lblMsg.ForeColor = System.Drawing.Color.Green;
-                        lblMsg.Text = "Reserva cancelada correctamente.";
+                        lblMsg.Text = T("misreservas.msg.cancelada");
                         CargarReservas(user.IdUsuario);
                     }
                     else
                     {
                         lblMsg.ForeColor = System.Drawing.Color.Red;
-                        lblMsg.Text = "La reserva ya estaba cancelada o no se encontró.";
+                        lblMsg.Text = T("misreservas.msg.yaCancelada");
                     }
                 }
                 catch (Exception ex)
                 {
                     if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                     lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = "Error al cancelar reserva: " + ex.Message;
+                    lblMsg.Text = T("misreservas.msg.errorCancelar") + ": " + ex.Message;
                 }
             }
         }

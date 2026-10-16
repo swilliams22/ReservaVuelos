@@ -1,3 +1,4 @@
+using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.DAL;
 using ReservaVuelos.Servicios;
@@ -26,7 +27,7 @@ namespace ReservaVuelos
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (!AutorizacionService.TienePermiso(user, Permisos.VerBackup))
             {
                 Response.Redirect("Login.aspx");
@@ -46,33 +47,33 @@ namespace ReservaVuelos
         protected void btnGenerarBackup_Click(object sender, EventArgs e)
         {
             AutorizacionService.Exigir(Permisos.CrearBackup);
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (!AutorizacionService.TienePermiso(user, Permisos.VerBackup))
             {
                 Response.Redirect("Login.aspx");
                 return;
             }
 
-            var fecha = DateTime.Now;
-            var backupDirectory = GetBackupDirectory();
-            var archivo = "AeroLink_" + fecha.ToString("yyyy-MM-dd_HH-mm-ss") + ".bak";
-            var rutaCompleta = Path.Combine(backupDirectory, archivo);
+            DateTime fecha = DateTime.Now;
+            string backupDirectory = GetBackupDirectory();
+            string archivo = "AeroLink_" + fecha.ToString("yyyy-MM-dd_HH-mm-ss") + ".bak";
+            string rutaCompleta = Path.Combine(backupDirectory, archivo);
 
-            var backupGenerado = false;
-            var advertencia = false;
-            var mensaje = string.Empty;
+            bool backupGenerado = false;
+            bool advertencia = false;
+            string mensaje = string.Empty;
 
             try
             {
-                using (var cn = GetMasterConnection())
+                using (SqlConnection cn = GetMasterConnection())
                 {
                     cn.Open();
-                    var dbName = GetDatabaseName();
-                    var safeDbName = dbName.Replace("]", "]]" );
+                    string dbName = GetDatabaseName();
+                    string safeDbName = dbName.Replace("]", "]]" );
 
                     try
                     {
-                        using (var cmdDir = new SqlCommand("EXEC master.dbo.xp_create_subdir @Dir", cn))
+                        using (SqlCommand cmdDir = new SqlCommand("EXEC master.dbo.xp_create_subdir @Dir", cn))
                         {
                             cmdDir.Parameters.AddWithValue("@Dir", backupDirectory);
                             cmdDir.ExecuteNonQuery();
@@ -86,7 +87,7 @@ namespace ReservaVuelos
 
                     try
                     {
-                        using (var cmdBackup = new SqlCommand("BACKUP DATABASE [" + safeDbName + "] TO DISK = @Ruta WITH INIT, CHECKSUM", cn))
+                        using (SqlCommand cmdBackup = new SqlCommand("BACKUP DATABASE [" + safeDbName + "] TO DISK = @Ruta WITH INIT, CHECKSUM", cn))
                         {
                             cmdBackup.Parameters.AddWithValue("@Ruta", rutaCompleta);
                             cmdBackup.ExecuteNonQuery();
@@ -103,7 +104,7 @@ namespace ReservaVuelos
                     {
                         try
                         {
-                            using (var cmdVerify = new SqlCommand("RESTORE VERIFYONLY FROM DISK = @Ruta WITH CHECKSUM", cn))
+                            using (SqlCommand cmdVerify = new SqlCommand("RESTORE VERIFYONLY FROM DISK = @Ruta WITH CHECKSUM", cn))
                             {
                                 cmdVerify.Parameters.AddWithValue("@Ruta", rutaCompleta);
                                 cmdVerify.ExecuteNonQuery();
@@ -141,7 +142,7 @@ namespace ReservaVuelos
             }
             catch (Exception ex)
             {
-                var error = "Error inesperado al ejecutar backup. " + ex.Message;
+                string error = "Error inesperado al ejecutar backup. " + ex.Message;
                 MostrarResultadoBackup(archivo, fecha, rutaCompleta, "Error", error, System.Drawing.Color.Red);
                 _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user != null ? user.Email : "Sistema", Accion = "Error inesperado al generar backup. Detalle: " + ex.Message, Criticidad = 3, Pantalla = "Backup" });
             }
@@ -158,7 +159,7 @@ namespace ReservaVuelos
             AutorizacionService.Exigir(Permisos.VerBackup);
             if (e.CommandName != "SeleccionarBackup") return;
 
-            var ruta = e.CommandArgument == null ? string.Empty : e.CommandArgument.ToString();
+            string ruta = e.CommandArgument == null ? string.Empty : e.CommandArgument.ToString();
             hfBackupSeleccionado.Value = ruta;
             lblBackupSeleccionado.Text = Path.GetFileName(ruta) + " - " + ruta;
             lblRestoreResultado.Text = string.Empty;
@@ -168,7 +169,7 @@ namespace ReservaVuelos
         protected void btnRestaurarBackup_Click(object sender, EventArgs e)
         {
             AutorizacionService.Exigir(Permisos.RestaurarBackup);
-            var user = SesionService.GetUser();
+            Usuario user = SesionService.GetUser();
             if (!AutorizacionService.TienePermiso(user, Permisos.VerBackup))
             {
                 Response.Redirect("Login.aspx");
@@ -183,9 +184,9 @@ namespace ReservaVuelos
                 return;
             }
 
-            var archivo = Path.GetFileName(rutaBackup);
-            var dbName = GetDatabaseName();
-            var safeDbName = dbName.Replace("]", "]]" );
+            string archivo = Path.GetFileName(rutaBackup);
+            string dbName = GetDatabaseName();
+            string safeDbName = dbName.Replace("]", "]]" );
 
             _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Inicio de restauración de backup. Archivo: " + archivo + " - Ruta: " + rutaBackup, Criticidad = 1, Pantalla = "Backup" });
 
@@ -195,18 +196,18 @@ namespace ReservaVuelos
                 cn = GetMasterConnection();
                 cn.Open();
 
-                using (var cmdVerify = new SqlCommand("RESTORE VERIFYONLY FROM DISK = @Ruta WITH CHECKSUM", cn))
+                using (SqlCommand cmdVerify = new SqlCommand("RESTORE VERIFYONLY FROM DISK = @Ruta WITH CHECKSUM", cn))
                 {
                     cmdVerify.Parameters.AddWithValue("@Ruta", rutaBackup);
                     cmdVerify.ExecuteNonQuery();
                 }
 
-                using (var cmdSingleUser = new SqlCommand("ALTER DATABASE [" + safeDbName + "] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", cn))
+                using (SqlCommand cmdSingleUser = new SqlCommand("ALTER DATABASE [" + safeDbName + "] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", cn))
                 {
                     cmdSingleUser.ExecuteNonQuery();
                 }
 
-                using (var cmdRestore = new SqlCommand("RESTORE DATABASE [" + safeDbName + "] FROM DISK = @Ruta WITH REPLACE, RECOVERY, CHECKSUM", cn))
+                using (SqlCommand cmdRestore = new SqlCommand("RESTORE DATABASE [" + safeDbName + "] FROM DISK = @Ruta WITH REPLACE, RECOVERY, CHECKSUM", cn))
                 {
                     cmdRestore.Parameters.AddWithValue("@Ruta", rutaBackup);
                     cmdRestore.ExecuteNonQuery();
@@ -215,7 +216,7 @@ namespace ReservaVuelos
                 MostrarResultadoRestore("Éxito", "Restauración completada correctamente con el archivo " + archivo + ".", System.Drawing.Color.Green);
                 _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Restauración de backup exitosa. Archivo: " + archivo + " - Ruta: " + rutaBackup, Criticidad = 1, Pantalla = "Backup" });
 
-                var integrityResult = new IntegrityService().TryResolveAfterValidation(user.IdUsuario, "Restauracion de backup validada");
+                IntegrityValidationResult integrityResult = new IntegrityService().TryResolveAfterValidation(user.IdUsuario, "Restauracion de backup validada");
                 if (!integrityResult.IsValid)
                 {
                     MostrarResultadoRestore("Advertencia", "Backup restaurado, pero persisten inconsistencias de integridad. El modo de contingencia permanece activo.", System.Drawing.Color.DarkOrange);
@@ -224,7 +225,7 @@ namespace ReservaVuelos
             }
             catch (Exception ex)
             {
-                var mensaje = "Error al restaurar backup. " + ex.Message;
+                string mensaje = "Error al restaurar backup. " + ex.Message;
                 MostrarResultadoRestore("Error", mensaje, System.Drawing.Color.Red);
                 _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Error en restauración de backup. Archivo: " + archivo + " - Ruta: " + rutaBackup + " - Detalle: " + ex.Message, Criticidad = 3, Pantalla = "Backup" });
             }
@@ -234,7 +235,7 @@ namespace ReservaVuelos
                 {
                     if (cn != null && cn.State == System.Data.ConnectionState.Open)
                     {
-                        using (var cmdMultiUser = new SqlCommand("ALTER DATABASE [" + safeDbName + "] SET MULTI_USER", cn))
+                        using (SqlCommand cmdMultiUser = new SqlCommand("ALTER DATABASE [" + safeDbName + "] SET MULTI_USER", cn))
                         {
                             cmdMultiUser.ExecuteNonQuery();
                         }
@@ -242,7 +243,7 @@ namespace ReservaVuelos
                 }
                 catch (Exception exMulti)
                 {
-                    var warning = "Advertencia: no se pudo asegurar MULTI_USER. " + exMulti.Message;
+                    string warning = "Advertencia: no se pudo asegurar MULTI_USER. " + exMulti.Message;
                     if (string.IsNullOrWhiteSpace(lblRestoreMensaje.Text)) lblRestoreMensaje.Text = warning;
                     else lblRestoreMensaje.Text += " " + warning;
                     _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = warning + " Archivo: " + archivo + " - Ruta: " + rutaBackup, Criticidad = 2, Pantalla = "Backup" });
@@ -256,8 +257,8 @@ namespace ReservaVuelos
 
         private void CargarBackupsDisponibles()
         {
-            var lista = new List<BackupListItem>();
-            var backupDirectory = GetBackupDirectory();
+            List<BackupListItem> lista = new List<BackupListItem>();
+            string backupDirectory = GetBackupDirectory();
 
             try
             {
@@ -266,9 +267,9 @@ namespace ReservaVuelos
                     Directory.CreateDirectory(backupDirectory);
                 }
 
-                foreach (var file in Directory.GetFiles(backupDirectory, "*.bak", SearchOption.TopDirectoryOnly))
+                foreach (string file in Directory.GetFiles(backupDirectory, "*.bak", SearchOption.TopDirectoryOnly))
                 {
-                    var fi = new FileInfo(file);
+                    FileInfo fi = new FileInfo(file);
                     lista.Add(new BackupListItem
                     {
                         Nombre = fi.Name,
@@ -293,7 +294,7 @@ namespace ReservaVuelos
             rutaBackup = string.Empty;
             mensaje = string.Empty;
 
-            var seleccion = hfBackupSeleccionado.Value == null ? string.Empty : hfBackupSeleccionado.Value.Trim();
+            string seleccion = hfBackupSeleccionado.Value == null ? string.Empty : hfBackupSeleccionado.Value.Trim();
             if (string.IsNullOrWhiteSpace(seleccion))
             {
                 mensaje = "Debe seleccionar un archivo de backup de la lista.";
@@ -306,10 +307,10 @@ namespace ReservaVuelos
                 return false;
             }
 
-            var baseDir = Path.GetFullPath(GetBackupDirectory());
+            string baseDir = Path.GetFullPath(GetBackupDirectory());
             if (!baseDir.EndsWith("\\")) baseDir += "\\";
 
-            var fullPath = Path.GetFullPath(seleccion);
+            string fullPath = Path.GetFullPath(seleccion);
             if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
             {
                 mensaje = "No se permite usar rutas externas a la carpeta de backups.";
@@ -334,7 +335,7 @@ namespace ReservaVuelos
 
         private string GetBackupDirectory()
         {
-            var backupDirectory = ConfigurationManager.AppSettings["BackupDirectory"] ?? @"C:\AeroLink\backups\";
+            string backupDirectory = ConfigurationManager.AppSettings["BackupDirectory"] ?? @"C:\AeroLink\backups\";
             backupDirectory = Path.GetFullPath(backupDirectory);
             if (!backupDirectory.EndsWith("\\")) backupDirectory += "\\";
             return backupDirectory;
@@ -342,7 +343,7 @@ namespace ReservaVuelos
 
         private string GetDatabaseName()
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 return new SqlConnectionStringBuilder(cn.ConnectionString).InitialCatalog;
             }
@@ -350,9 +351,9 @@ namespace ReservaVuelos
 
         private SqlConnection GetMasterConnection()
         {
-            using (var cn = ConexionDAL.GetConnection())
+            using (SqlConnection cn = ConexionDAL.GetConnection())
             {
-                var builder = new SqlConnectionStringBuilder(cn.ConnectionString);
+                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(cn.ConnectionString);
                 builder.InitialCatalog = "master";
                 return new SqlConnection(builder.ConnectionString);
             }

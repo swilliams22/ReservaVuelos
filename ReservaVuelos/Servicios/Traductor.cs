@@ -76,7 +76,7 @@ namespace ReservaVuelos.Servicios
                 return;
             }
 
-            foreach (var contenido in BuscarPlaceHolders(pagina.Master))
+            foreach (ContentPlaceHolder contenido in BuscarPlaceHolders(pagina.Master))
                 TraducirControles(contenido, idioma);
         }
 
@@ -84,10 +84,10 @@ namespace ReservaVuelos.Servicios
         {
             foreach (Control hijo in padre.Controls)
             {
-                var placeHolder = hijo as ContentPlaceHolder;
+                ContentPlaceHolder placeHolder = hijo as ContentPlaceHolder;
                 if (placeHolder != null) yield return placeHolder;
 
-                foreach (var anidado in BuscarPlaceHolders(hijo))
+                foreach (ContentPlaceHolder anidado in BuscarPlaceHolders(hijo))
                     yield return anidado;
             }
         }
@@ -105,24 +105,24 @@ namespace ReservaVuelos.Servicios
 
         private static void Aplicar(Control control, Idioma idioma)
         {
-            var atributos = ObtenerAtributos(control);
+            AttributeCollection atributos = ObtenerAtributos(control);
             if (atributos == null) return;
 
             string texto;
 
             // Si la clave no existe se conserva el texto original del .aspx.
-            var clave = atributos[ATRIBUTO];
+            string clave = atributos[ATRIBUTO];
             if (!string.IsNullOrEmpty(clave) && BuscarTexto(clave, idioma, out texto))
                 AsignarTexto(control, texto);
 
-            foreach (var par in ATRIBUTOS_HTML)
+            foreach (string[] par in ATRIBUTOS_HTML)
             {
-                var claveAtributo = atributos[par[0]];
+                string claveAtributo = atributos[par[0]];
                 if (!string.IsNullOrEmpty(claveAtributo) && BuscarTexto(claveAtributo, idioma, out texto))
                     atributos[par[1]] = texto;
             }
 
-            var grilla = control as GridView;
+            GridView grilla = control as GridView;
             if (grilla != null)
                 TraducirEncabezados(grilla, atributos[ATRIBUTO_ENCABEZADOS], idioma);
         }
@@ -131,10 +131,10 @@ namespace ReservaVuelos.Servicios
         {
             if (string.IsNullOrEmpty(claves) || grilla.HeaderRow == null) return;
 
-            var lista = claves.Split(',');
+            string[] lista = claves.Split(',');
             for (int i = 0; i < lista.Length && i < grilla.HeaderRow.Cells.Count; i++)
             {
-                var clave = lista[i].Trim();
+                string clave = lista[i].Trim();
                 string texto;
                 if (clave.Length > 0 && BuscarTexto(clave, idioma, out texto))
                     grilla.HeaderRow.Cells[i].Text = texto;
@@ -143,10 +143,10 @@ namespace ReservaVuelos.Servicios
 
         private static AttributeCollection ObtenerAtributos(Control control)
         {
-            var web = control as WebControl;
+            WebControl web = control as WebControl;
             if (web != null) return web.Attributes;
 
-            var html = control as HtmlControl;
+            HtmlControl html = control as HtmlControl;
             if (html != null) return html.Attributes;
 
             return null;
@@ -168,12 +168,12 @@ namespace ReservaVuelos.Servicios
         // Primero el idioma pedido; si falta, el idioma por defecto.
         private static bool BuscarTexto(string clave, Idioma idioma, out string texto)
         {
-            var bll = new IdiomaBLL();
+            IdiomaBLL bll = new IdiomaBLL();
 
             if (bll.GetTraducciones(idioma).TryGetValue(clave, out texto) && !string.IsNullOrWhiteSpace(texto))
                 return true;
 
-            var porDefecto = bll.GetDefault();
+            Idioma porDefecto = bll.GetDefault();
             if (porDefecto.IdIdioma != idioma.IdIdioma &&
                 bll.GetTraducciones(porDefecto).TryGetValue(clave, out texto) && !string.IsNullOrWhiteSpace(texto))
                 return true;

@@ -14,7 +14,7 @@ namespace ReservaVuelos.Servicios
 
         public Usuario Authenticate(string email, string password)
         {
-            var u = _ud.GetByEmail(email);
+            Usuario u = _ud.GetByEmail(email);
             if (u == null)
             {
                 // Usuario no encontrado -> Advertencia
@@ -57,7 +57,7 @@ namespace ReservaVuelos.Servicios
             u.PasswordSalt = salt;
             u.FechaAlta = DateTime.Now;
             u.Activo = true;
-            var id = _ud.Create(u);
+            int id = _ud.Create(u);
 
             // Registro exitoso -> Info
             _bd.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = u.Email, Accion = $"Registro de usuario. IdUsuario: {id}", Criticidad = 1, Pantalla = "Registro" });

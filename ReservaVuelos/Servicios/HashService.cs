@@ -10,14 +10,14 @@ namespace ReservaVuelos.Servicios
         {
             // salt
             byte[] salt = new byte[16];
-            using (var rng = new RNGCryptoServiceProvider())
+            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
             {
                 rng.GetBytes(salt);
             }
             // derive
-            using (var derive = new Rfc2898DeriveBytes(password, salt, 10000))
+            using (Rfc2898DeriveBytes derive = new Rfc2898DeriveBytes(password, salt, 10000))
             {
-                var key = derive.GetBytes(32);
+                byte[] key = derive.GetBytes(32);
                 passwordSalt = Convert.ToBase64String(salt);
                 passwordHash = Convert.ToBase64String(key);
             }
@@ -25,11 +25,11 @@ namespace ReservaVuelos.Servicios
 
         public static bool VerifyPassword(string password, string storedHash, string storedSalt)
         {
-            var salt = Convert.FromBase64String(storedSalt);
-            using (var derive = new Rfc2898DeriveBytes(password, salt, 10000))
+            byte[] salt = Convert.FromBase64String(storedSalt);
+            using (Rfc2898DeriveBytes derive = new Rfc2898DeriveBytes(password, salt, 10000))
             {
-                var key = derive.GetBytes(32);
-                var keyBase64 = Convert.ToBase64String(key);
+                byte[] key = derive.GetBytes(32);
+                string keyBase64 = Convert.ToBase64String(key);
                 return keyBase64 == storedHash;
             }
         }

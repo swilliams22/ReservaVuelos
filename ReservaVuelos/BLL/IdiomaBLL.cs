@@ -74,7 +74,7 @@ namespace ReservaVuelos.BLL
 
         public Idioma GetDefault()
         {
-            var activos = GetActivos();
+            List<Idioma> activos = GetActivos();
             return activos.FirstOrDefault(i => i.EsDefault) ?? activos.First();
         }
 
@@ -100,7 +100,7 @@ namespace ReservaVuelos.BLL
 
             try
             {
-                var textos = _dal.GetTraducciones(idioma.IdIdioma);
+                Dictionary<string, string> textos = _dal.GetTraducciones(idioma.IdIdioma);
                 _traducciones[idioma.Codigo] = new TraduccionesEnCache
                 {
                     Textos = textos,
@@ -110,7 +110,7 @@ namespace ReservaVuelos.BLL
             }
             catch (Exception)
             {
-                var vacio = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                Dictionary<string, string> vacio = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 _traducciones[idioma.Codigo] = new TraduccionesEnCache
                 {
                     Textos = vacio,
@@ -139,7 +139,7 @@ namespace ReservaVuelos.BLL
 
         public List<EtiquetaTraduccion> GetEtiquetas(Idioma idioma, string pantalla, bool soloPendientes)
         {
-            var baseIdioma = GetTodos().First(i => i.EsDefault);
+            Idioma baseIdioma = GetTodos().First(i => i.EsDefault);
             return _dal.GetEtiquetas(idioma.IdIdioma, baseIdioma.IdIdioma, pantalla, soloPendientes);
         }
 
@@ -154,7 +154,7 @@ namespace ReservaVuelos.BLL
             if (!Regex.IsMatch(codigo, @"^[a-z]{2,3}(-[A-Za-z0-9]{2,4})?$")) return "codigo";
             if (_dal.ExisteCodigo(codigo)) return "existe";
 
-            var id = _dal.Crear(codigo, nombre);
+            int id = _dal.Crear(codigo, nombre);
             LimpiarCache();
             creado = new Idioma { IdIdioma = id, Codigo = codigo, Nombre = nombre };
             return null;

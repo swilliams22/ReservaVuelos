@@ -7,7 +7,7 @@ namespace ReservaVuelos.DAL
     {
         public static SqlConnection GetConnection()
         {
-            var cs = ConfigurationManager.ConnectionStrings["ReservaVuelosConnectionString"]?.ConnectionString;
+            string cs = ConfigurationManager.ConnectionStrings["ReservaVuelosConnectionString"]?.ConnectionString;
             return new SqlConnection(cs);
         }
     }

@@ -82,7 +82,7 @@ namespace ReservaVuelos
                 return;
             }
 
-            var cantidadPasajeros = ObtenerCantidadPasajeros();
+            int? cantidadPasajeros = ObtenerCantidadPasajeros();
             if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
             {
                 lblMsg.Text = T("buscar.msg.cantidadInvalida");
@@ -93,7 +93,7 @@ namespace ReservaVuelos
             string destino = txtDestino.Text.Trim();
 
             // Si no se cargan filtros, Search devuelve todos los vuelos activos.
-            var listaIda = _vBLL.Search(origen, destino, fechaIda, "Activos");
+            List<Vuelo> listaIda = _vBLL.Search(origen, destino, fechaIda, "Activos");
             listaIda = listaIda.FindAll(v => v.CuposDisponibles >= cantidadPasajeros.Value);
             gvVuelos.DataSource = listaIda;
             gvVuelos.DataBind();
@@ -106,7 +106,7 @@ namespace ReservaVuelos
             if (rbIdaVuelta.Checked &&
                 !string.IsNullOrWhiteSpace(origen) && !string.IsNullOrWhiteSpace(destino))
             {
-                var listaVuelta = _vBLL.Search(
+                List<Vuelo> listaVuelta = _vBLL.Search(
                     destino,
                     origen,
                     fechaVuelta,
@@ -137,7 +137,7 @@ namespace ReservaVuelos
             if (e.CommandName == "Reservar")
             {
                 int id = Convert.ToInt32(e.CommandArgument);
-                var user = SesionService.GetUser();
+                Usuario user = SesionService.GetUser();
                 if (user == null)
                 {
                     Session["ReturnUrl"] = "BuscarVuelos.aspx";
@@ -145,7 +145,7 @@ namespace ReservaVuelos
                     return;
                 }
 
-                var cantidadPasajeros = ObtenerCantidadPasajeros();
+                int? cantidadPasajeros = ObtenerCantidadPasajeros();
                 if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
@@ -178,7 +178,7 @@ namespace ReservaVuelos
                     return;
                 }
 
-                var cantidadPasajeros = ObtenerCantidadPasajeros();
+                int? cantidadPasajeros = ObtenerCantidadPasajeros();
                 if (!cantidadPasajeros.HasValue || cantidadPasajeros.Value < 1)
                 {
                     lblMsg.ForeColor = System.Drawing.Color.Red;
@@ -186,7 +186,7 @@ namespace ReservaVuelos
                     return;
                 }
 
-                var vuelosVuelta = _vBLL.Search(
+                List<Vuelo> vuelosVuelta = _vBLL.Search(
                     vueloIda.Destino,
                     vueloIda.Origen,
                     fechaVuelta,

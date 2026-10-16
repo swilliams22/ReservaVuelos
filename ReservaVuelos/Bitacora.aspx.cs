@@ -1,6 +1,7 @@
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
+using System.Collections.Generic;
 
 namespace ReservaVuelos
 {
@@ -9,7 +10,7 @@ namespace ReservaVuelos
         private BitacoraBLL _bBLL = new BitacoraBLL();
         protected void Page_Load(object sender, EventArgs e)
         {
-            var user = SesionService.GetUser();
+            ReservaVuelos.BE.Usuario user = SesionService.GetUser();
             if (!AutorizacionService.TienePermiso(user, Permisos.VerBitacora))
             {
                 Response.Redirect("Login.aspx");
@@ -33,11 +34,11 @@ namespace ReservaVuelos
             DateTime d;
             if (DateTime.TryParse(txtDesde.Text, out d)) desde = d;
             if (DateTime.TryParse(txtHasta.Text, out d)) hasta = d;
-            var usuario = txtUsuarioFiltro.Text.Trim();
+            string usuario = txtUsuarioFiltro.Text.Trim();
             int criticidadParsed;
             int? criticidad = int.TryParse(ddlCriticidad.SelectedValue, out criticidadParsed) ? (int?)criticidadParsed : null;
-            var pantalla = txtPantallaFiltro.Text.Trim();
-            var lista = _bBLL.GetByFilters(desde, hasta, usuario, criticidad, pantalla);
+            string pantalla = txtPantallaFiltro.Text.Trim();
+            List<ReservaVuelos.BE.Bitacora> lista = _bBLL.GetByFilters(desde, hasta, usuario, criticidad, pantalla);
             gvBitacora.DataSource = lista;
             gvBitacora.DataBind();
         }
