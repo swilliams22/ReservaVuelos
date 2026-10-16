@@ -23,7 +23,8 @@
         Leyenda de criticidad: 1 = Información, 2 = Advertencia, 3 = Error, 4 = Crítica.
     </div>
 
-    <asp:GridView ID="gvBitacora" runat="server" CssClass="grid" AutoGenerateColumns="false">
+    <asp:GridView ID="gvBitacora" runat="server" CssClass="grid" AutoGenerateColumns="false"
+        AllowPaging="true" PageSize="20" OnPageIndexChanging="gvBitacora_PageIndexChanging">
         <Columns>
             <asp:BoundField DataField="Fecha" HeaderText="Fecha" DataFormatString="{0:yyyy-MM-dd HH:mm}" />
             <asp:BoundField DataField="Usuario" HeaderText="Usuario" />
