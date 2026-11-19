@@ -19,12 +19,12 @@ BEGIN
 END;
 GO
 
-ALTER TABLE dbo.Usuarios WITH CHECK
-ADD CONSTRAINT CK_Usuarios_Rol
-CHECK (Rol IN (N'Administrador', N'WebMaster', N'Usuario'));
-GO
-
-ALTER TABLE dbo.Usuarios CHECK CONSTRAINT CK_Usuarios_Rol;
+-- Si ya se instaló MigracionPerfiles.sql, el rol lo valida TR_Usuarios_ValidarRol
+-- y no se vuelve a crear el CHECK fijo (rechazaría los perfiles nuevos).
+IF OBJECT_ID(N'dbo.TR_Usuarios_ValidarRol', N'TR') IS NULL
+    ALTER TABLE dbo.Usuarios WITH CHECK
+    ADD CONSTRAINT CK_Usuarios_Rol
+    CHECK (Rol IN (N'Administrador', N'WebMaster', N'Usuario'));
 GO
 
 -- Descomentar, indicar el email real y ejecutar para promover un usuario:

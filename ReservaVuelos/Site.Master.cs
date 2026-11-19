@@ -101,6 +101,8 @@ namespace ReservaVuelos
             if (menuBackup != null) menuBackup.Visible = AutorizacionService.TienePermiso(user, Permisos.VerBackup);
             if (menuBitacora != null) menuBitacora.Visible = AutorizacionService.TienePermiso(user, Permisos.VerBitacora);
             if (menuIdiomas != null) menuIdiomas.Visible = AutorizacionService.TienePermiso(user, Permisos.VerIdiomas);
+            if (menuPerfiles != null) menuPerfiles.Visible = AutorizacionService.TienePermiso(user, Permisos.VerPerfiles);
+            if (menuUsuarios != null) menuUsuarios.Visible = AutorizacionService.TienePermiso(user, Permisos.VerUsuarios);
         }
     }
 }

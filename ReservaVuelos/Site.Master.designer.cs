@@ -42,6 +42,8 @@ namespace ReservaVuelos
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuBackup;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuBitacora;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuIdiomas;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuPerfiles;
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuUsuarios;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuLogin;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuRegistro;
         protected global::System.Web.UI.HtmlControls.HtmlGenericControl menuLogout;

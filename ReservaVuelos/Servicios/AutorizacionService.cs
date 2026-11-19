@@ -1,6 +1,7 @@
 using ReservaVuelos.BE;
 using ReservaVuelos.DAL;
 using System;
+using System.Collections.Generic;
 using System.Web;
 using System.Web.UI;
 
@@ -22,6 +23,20 @@ namespace ReservaVuelos.Servicios
                 if (contexto != null) contexto.Items[clave] = arbol;
             }
             return arbol != null && arbol.TienePermiso(codigo);
+        }
+
+        // Después de cambiar perfiles o roles, el resto de la petición (menú, botones) usa el árbol nuevo.
+        public static void InvalidarCache()
+        {
+            HttpContext contexto = HttpContext.Current;
+            if (contexto == null) return;
+            List<object> claves = new List<object>();
+            foreach (object clave in contexto.Items.Keys)
+            {
+                string texto = clave as string;
+                if (texto != null && texto.StartsWith(ClaveArbol + ":", StringComparison.Ordinal)) claves.Add(clave);
+            }
+            foreach (object clave in claves) contexto.Items.Remove(clave);
         }
 
         public static void Exigir(string codigo)

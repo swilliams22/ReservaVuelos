@@ -22,5 +22,9 @@ namespace ReservaVuelos.Servicios
         public const string VerBitacora = "Bitacora.Ver";
         public const string VerIdiomas = "Idiomas.Ver";
         public const string EditarIdiomas = "Idiomas.Editar";
+        public const string VerPerfiles = "Perfiles.Ver";
+        public const string EditarPerfiles = "Perfiles.Editar";
+        public const string VerUsuarios = "Usuarios.Ver";
+        public const string AsignarRol = "Usuarios.AsignarRol";
     }
 }

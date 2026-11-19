@@ -1,6 +1,7 @@
 using ReservaVuelos.BE;
 using ReservaVuelos.Servicios;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -17,24 +18,52 @@ namespace ReservaVuelos.DAL
                 cn.Open();
                 using (SqlDataReader rdr = cmd.ExecuteReader())
                 {
-                    if (rdr.Read())
+                    if (rdr.Read()) return Mapear(rdr);
+                }
+            }
+            return null;
+        }
+
+        public Usuario GetById(int idUsuario)
+        {
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT * FROM Usuarios WHERE IdUsuario = @Id", cn))
+            {
+                cmd.Parameters.AddWithValue("@Id", idUsuario);
+                cn.Open();
+                using (SqlDataReader rdr = cmd.ExecuteReader())
+                {
+                    if (rdr.Read()) return Mapear(rdr);
+                }
+            }
+            return null;
+        }
+
+        // Listado para la administración: no devuelve hash ni salt de la contraseña.
+        public List<Usuario> Listar()
+        {
+            List<Usuario> res = new List<Usuario>();
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            using (SqlCommand cmd = new SqlCommand("SELECT IdUsuario, Nombre, Email, Rol, Activo, FechaAlta FROM Usuarios ORDER BY Nombre, Email", cn))
+            {
+                cn.Open();
+                using (SqlDataReader rdr = cmd.ExecuteReader())
+                {
+                    while (rdr.Read())
                     {
-                        return new Usuario
+                        res.Add(new Usuario
                         {
                             IdUsuario = Convert.ToInt32(rdr["IdUsuario"]),
                             Nombre = rdr["Nombre"].ToString(),
                             Email = rdr["Email"].ToString(),
-                            PasswordHash = rdr["PasswordHash"].ToString(),
-                            PasswordSalt = rdr["PasswordSalt"].ToString(),
                             Rol = rdr["Rol"].ToString(),
                             Activo = Convert.ToBoolean(rdr["Activo"]),
-                            FechaAlta = Convert.ToDateTime(rdr["FechaAlta"]),
-                            DVH = rdr["DVH"] != DBNull.Value ? Convert.ToInt32(rdr["DVH"]) : 0
-                        };
+                            FechaAlta = Convert.ToDateTime(rdr["FechaAlta"])
+                        });
                     }
                 }
             }
-            return null;
+            return res;
         }
 
         public int Create(Usuario u)
@@ -71,6 +100,61 @@ VALUES (@Nombre,@Email,@PasswordHash,@PasswordSalt,@Rol,@Activo,@FechaAlta,0); S
                     }
                 }
             }
+        }
+
+        // Cambia el rol sólo si todavía es rolAnterior (evita pisar un cambio concurrente)
+        // y recalcula DVH/DVV en la misma transacción. Devuelve false si no se modificó.
+        // El trigger TR_Usuarios_ValidarRol rechaza (50004) un rol que no sea un grupo existente.
+        public bool ActualizarRol(int idUsuario, string rolAnterior, string rolNuevo)
+        {
+            using (SqlConnection cn = ConexionDAL.GetConnection())
+            {
+                cn.Open();
+                using (SqlTransaction tran = cn.BeginTransaction(IsolationLevel.Serializable))
+                {
+                    try
+                    {
+                        int filas;
+                        using (SqlCommand cmd = new SqlCommand("UPDATE Usuarios SET Rol = @Nuevo WHERE IdUsuario = @Id AND Rol = @Anterior", cn, tran))
+                        {
+                            cmd.Parameters.AddWithValue("@Nuevo", rolNuevo);
+                            cmd.Parameters.AddWithValue("@Id", idUsuario);
+                            cmd.Parameters.AddWithValue("@Anterior", rolAnterior);
+                            filas = cmd.ExecuteNonQuery();
+                        }
+                        if (filas != 1)
+                        {
+                            tran.Rollback();
+                            return false;
+                        }
+
+                        new IntegrityService().UpdateRecordAndTableDVV(cn, tran, "Usuarios", idUsuario);
+                        tran.Commit();
+                        return true;
+                    }
+                    catch
+                    {
+                        try { tran.Rollback(); } catch { }
+                        throw;
+                    }
+                }
+            }
+        }
+
+        private static Usuario Mapear(SqlDataReader rdr)
+        {
+            return new Usuario
+            {
+                IdUsuario = Convert.ToInt32(rdr["IdUsuario"]),
+                Nombre = rdr["Nombre"].ToString(),
+                Email = rdr["Email"].ToString(),
+                PasswordHash = rdr["PasswordHash"].ToString(),
+                PasswordSalt = rdr["PasswordSalt"].ToString(),
+                Rol = rdr["Rol"].ToString(),
+                Activo = Convert.ToBoolean(rdr["Activo"]),
+                FechaAlta = Convert.ToDateTime(rdr["FechaAlta"]),
+                DVH = rdr["DVH"] != DBNull.Value ? Convert.ToInt32(rdr["DVH"]) : 0
+            };
         }
     }
 }

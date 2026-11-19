@@ -42,6 +42,8 @@ La solución ya no trabaja con una tabla única de reservas. El flujo vigente us
 - `AdminVuelos.aspx`: alta y baja lógica de vuelos.
 - `Bitacora.aspx`: seguimiento administrativo.
 - `GestionIdiomas.aspx`: administración de idiomas y traducciones (solo WebMaster).
+- `GestionPerfiles.aspx`: alta y baja de perfiles y asignación de permisos simples y compuestos, con el árbol completo de cada perfil (solo WebMaster).
+- `GestionUsuarios.aspx`: asignación de un perfil a cada usuario (solo WebMaster).
 
 ## Base de datos
 
@@ -146,17 +148,38 @@ En una base existente ejecutar **sólo**
 no cambia usuarios ni reservas. Para una instalación nueva, el script principal
 ya incorpora el mismo esquema. **El script principal recrea la base completa.**
 
-Las relaciones se administran actualmente mediante SQL; no hay una pantalla de
-administración de permisos ni asignaciones múltiples por usuario. Los triggers
+Cada usuario tiene un solo rol. Los triggers
 rechazan ciclos, hojas con hijos y cambios de tipo incompatibles. La aplicación
 también rechaza ciclos al construir el Composite. La migración repetida conserva
 la configuración existente. Los permisos de lectura y de acción son separados:
 para usar una acción dentro de una página se necesitan ambos.
 
-Las nuevas tablas del catálogo no se agregaron al mecanismo DVH/DVV: su edición
-debe quedar restringida a la administración de SQL Server. Cambiar `Usuarios.Rol`
-continúa sujeto al control de integridad existente y requiere el procedimiento de
-recalcular/verificar documentado para los roles.
+Las tablas del catálogo no forman parte del mecanismo DVH/DVV; se editan desde la
+pantalla de perfiles (ver Perfiles administrables). Cambiar `Usuarios.Rol` por SQL
+sigue rompiendo el DVH; desde la aplicación se recalcula en la misma transacción.
+
+### Perfiles administrables
+
+Los permisos simples (hojas) no se crean desde la aplicación: cada uno corresponde a
+una constante de `Permisos.cs` y se carga por script SQL. Desde la aplicación el
+WebMaster puede:
+
+- crear y eliminar perfiles (grupos), con nombre de hasta 30 caracteres y sin punto;
+- asignar a un perfil permisos simples y otros perfiles, y quitarlos;
+- asignar un perfil como rol de un usuario.
+
+`PerfilBLL` y `UsuarioBLL` aplican las reglas: no se repiten permisos, no se forman
+ciclos, no se elimina un perfil asignado a usuarios, nadie puede cambiar su propio rol
+y quien edita no puede quitarle a su perfil `Perfiles.Ver` ni `Perfiles.Editar`
+(la verificación se hace dentro de la misma transacción del cambio). Cambiar el rol
+valida antes la tabla `Usuarios` y recalcula DVH/DVV en la misma transacción, por lo
+que no hace falta recalcular a mano. Todos los cambios quedan en la bitácora.
+
+Permisos: `Perfiles.Ver`, `Perfiles.Editar`, `Usuarios.Ver` y `Usuarios.AsignarRol`,
+dentro de `GestionTecnica`. `MigracionPerfiles.sql` reemplaza el CHECK fijo de
+`Usuarios.Rol` por `TR_Usuarios_ValidarRol` (el rol debe ser un grupo existente) y
+agrega `TR_Permisos_ProtegerRolEnUso` (no se borra ni renombra un grupo asignado).
+En una base existente ejecutar `base/ActualizarBD_2026-10-15.sql`, que ya la incluye.
 
 ### Verificación
 

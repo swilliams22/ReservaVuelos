@@ -110,6 +110,8 @@
     <Content Include="DetalleReserva.aspx" />
     <Content Include="EnConstruccion.aspx" />
     <Content Include="GestionIdiomas.aspx" />
+    <Content Include="GestionPerfiles.aspx" />
+    <Content Include="GestionUsuarios.aspx" />
     <Content Include="GestionIntegridad.aspx" />
     <Content Include="Mantenimiento.aspx" />
     <Content Include="Content\bootstrap-grid.css" />
@@ -210,11 +212,14 @@
     </Compile>
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="BE\PermisoComponente.cs" />
+    <Compile Include="BE\PermisoItem.cs" />
+    <Compile Include="BLL\PerfilBLL.cs" />
     <Compile Include="DAL\PermisoDAL.cs" />
     <Compile Include="Servicios\Permisos.cs" />
     <Compile Include="Servicios\PoliticaPaginas.cs" />
     <Compile Include="Servicios\AutorizacionService.cs" />
     <Content Include="SQL\MigracionPermisosComposite.sql" />
+    <Content Include="SQL\MigracionPerfiles.sql" />
     <Compile Include="BasePage.cs">
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
@@ -239,6 +244,20 @@
     </Compile>
     <Compile Include="GestionIdiomas.aspx.designer.cs">
       <DependentUpon>GestionIdiomas.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="GestionPerfiles.aspx.cs">
+      <DependentUpon>GestionPerfiles.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="GestionPerfiles.aspx.designer.cs">
+      <DependentUpon>GestionPerfiles.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="GestionUsuarios.aspx.cs">
+      <DependentUpon>GestionUsuarios.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="GestionUsuarios.aspx.designer.cs">
+      <DependentUpon>GestionUsuarios.aspx</DependentUpon>
     </Compile>
     <Compile Include="BE\EtiquetaTraduccion.cs" />
     <Compile Include="BE\Idioma.cs" />

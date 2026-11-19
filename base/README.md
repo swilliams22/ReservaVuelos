@@ -7,7 +7,9 @@ sqlcmd -S . -E -b -f 65001 -i base/ActualizarBD_2026-10-15.sql
 ```
 
 El script agrega el rol WebMaster al CHECK de roles y las tablas, relaciones y
-validaciones de permisos Composite. Es idempotente y conserva los usuarios,
+validaciones de permisos Composite, y los perfiles administrables
+(permisos `Perfiles.*` y `Usuarios.*`, y validación del rol por trigger).
+Es idempotente y conserva los usuarios,
 contraseñas, reservas y permisos configurados. No crea cuentas ni contiene sus
 credenciales. Publicar también el código actualizado para activar la autorización
 por permisos y la búsqueda sin distinguir tildes.

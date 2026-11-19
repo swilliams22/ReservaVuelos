@@ -18,7 +18,8 @@ namespace ReservaVuelos.Servicios
             { "AdminVuelos.aspx", Permisos.VerVuelos },
             { "GestionIntegridad.aspx", Permisos.VerIntegridad },
             { "Backup.aspx", Permisos.VerBackup }, { "Bitacora.aspx", Permisos.VerBitacora },
-            { "GestionIdiomas.aspx", Permisos.VerIdiomas }
+            { "GestionIdiomas.aspx", Permisos.VerIdiomas },
+            { "GestionPerfiles.aspx", Permisos.VerPerfiles }, { "GestionUsuarios.aspx", Permisos.VerUsuarios }
         };
         public static bool IntentarObtener(string ruta, out string permiso)
         {
