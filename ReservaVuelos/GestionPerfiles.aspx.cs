@@ -41,7 +41,8 @@ namespace ReservaVuelos
 
         private void CargarPerfiles()
         {
-            gvPerfiles.DataSource = _bll.ListarPerfiles();
+            gvPerfiles.DataSource = FiltrarGrilla(_bll.ListarPerfiles(), FiltrogvPerfiles, v => v.Codigo);
+            gvPerfiles.PageIndex = Math.Min(gvPerfiles.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvPerfiles.DataSource).Count - 1) / gvPerfiles.PageSize);
             gvPerfiles.DataBind();
         }
 
@@ -61,6 +62,7 @@ namespace ReservaVuelos
 
         protected void gvPerfiles_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            if (e.CommandName == "Page") return;
             int idPerfil;
             if (!int.TryParse(Convert.ToString(e.CommandArgument), out idPerfil)) return;
             lblMsg.Text = "";
@@ -103,6 +105,7 @@ namespace ReservaVuelos
 
         private void AbrirDetalle(int idPerfil)
         {
+            gvAsignados.PageIndex = 0;
             hfIdPerfil.Value = idPerfil.ToString();
             pnlDetalle.Visible = true;
             CargarDetalle();
@@ -123,7 +126,8 @@ namespace ReservaVuelos
             CargarArbol();
 
             gvAsignados.EmptyDataText = T("perfiles.sinAsignados");
-            gvAsignados.DataSource = _bll.ListarAsignados(perfil.IdPermiso);
+            gvAsignados.DataSource = FiltrarGrilla(_bll.ListarAsignados(perfil.IdPermiso), FiltrogvAsignados, v => v.Codigo + " " + TextoTipo(v));
+            gvAsignados.PageIndex = Math.Min(gvAsignados.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvAsignados.DataSource).Count - 1) / gvAsignados.PageSize);
             gvAsignados.DataBind();
 
             pnlAgregar.Visible = PuedeEditar;
@@ -224,14 +228,44 @@ namespace ReservaVuelos
             catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
             {
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = ex.Message;
+                lblMsg.Text = ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
             catch (Exception ex)
             {
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = T("perfiles.msg.error") + ": " + ex.Message;
+                lblMsg.Text = T("perfiles.msg.error") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
             return false;
         }
+        protected void gvPerfiles_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvPerfiles.PageIndex = e.NewPageIndex;
+            CargarPerfiles();
+        }
+
+        private string FiltrogvPerfiles { get { return ViewState["FiltrogvPerfiles"] as string ?? ""; } set { ViewState["FiltrogvPerfiles"] = value; } }
+        protected void FiltrargvPerfiles(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvPerfiles.Text = "";
+            FiltrogvPerfiles = txtFiltrogvPerfiles.Text.Trim();
+            gvPerfiles.PageIndex = 0;
+            CargarPerfiles();
+        }
+
+        protected void gvAsignados_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvAsignados.PageIndex = e.NewPageIndex;
+            CargarDetalle();
+        }
+
+        private string FiltrogvAsignados { get { return ViewState["FiltrogvAsignados"] as string ?? ""; } set { ViewState["FiltrogvAsignados"] = value; } }
+        protected void FiltrargvAsignados(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvAsignados.Text = "";
+            FiltrogvAsignados = txtFiltrogvAsignados.Text.Trim();
+            gvAsignados.PageIndex = 0;
+            CargarDetalle();
+        }
+
     }
 }

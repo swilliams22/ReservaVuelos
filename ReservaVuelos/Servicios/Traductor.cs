@@ -1,6 +1,10 @@
 ﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using System.Collections.Generic;
+using System;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Web;
 using System.Web.UI;
 using System.Web.UI.HtmlControls;
 using System.Web.UI.WebControls;
@@ -51,6 +55,31 @@ namespace ReservaVuelos.Servicios
         {
             string texto;
             return BuscarTexto(clave, idioma, out texto) ? texto : textoActual;
+        }
+
+        /// <summary>Localiza mensajes conocidos de la BLL y SOAP sin cambiar sus contratos.
+        /// Los diagnósticos externos que no están en el catálogo se conservan intactos.</summary>
+        public static string Mensaje(string mensaje)
+        {
+            if (string.IsNullOrEmpty(mensaje)) return mensaje;
+            IdiomaBLL bll = new IdiomaBLL();
+            Idioma fuente = bll.GetByCodigo("es-AR");
+            if (fuente == null) return mensaje;
+            var originales = bll.GetTraducciones(fuente);
+            foreach (var par in originales.Where(p => p.Key.StartsWith("validacion.", StringComparison.Ordinal)))
+            {
+                if (par.Value == mensaje) return T(par.Key);
+                // Plantillas de errores con parámetros: los valores (IDs, nombres) no se traducen.
+                if (!Regex.IsMatch(par.Value, @"\{\d+\}")) continue;
+                var indices = Regex.Matches(par.Value, @"\{(\d+)\}").Cast<Match>().Select(m => int.Parse(m.Groups[1].Value)).ToArray();
+                string patron = "^" + Regex.Replace(Regex.Escape(par.Value), @"\\\{\d+}", "(.*?)") + "$";
+                Match encontrado = Regex.Match(mensaje, patron, RegexOptions.Singleline, TimeSpan.FromMilliseconds(100));
+                if (!encontrado.Success) continue;
+                object[] argumentos = new object[indices.Max() + 1];
+                for (int i = 0; i < indices.Length; i++) argumentos[indices[i]] = encontrado.Groups[i + 1].Value;
+                return string.Format(T(par.Key), argumentos);
+            }
+            return mensaje;
         }
 
         // ---------- Controles marcados con data-i18n ----------
@@ -120,6 +149,23 @@ namespace ReservaVuelos.Servicios
                 string claveAtributo = atributos[par[0]];
                 if (!string.IsNullOrEmpty(claveAtributo) && BuscarTexto(claveAtributo, idioma, out texto))
                     atributos[par[1]] = texto;
+            }
+
+            ListControl lista = control as ListControl;
+            if (lista != null)
+                foreach (ListItem item in lista.Items)
+                {
+                    string claveItem = item.Attributes[ATRIBUTO];
+                    if (!string.IsNullOrEmpty(claveItem) && BuscarTexto(claveItem, idioma, out texto))
+                        item.Text = texto; // Nunca cambiar Value: los filtros usan códigos estables.
+                }
+
+            string confirmacion = atributos["data-i18n-confirm"];
+            if (!string.IsNullOrEmpty(confirmacion) && BuscarTexto(confirmacion, idioma, out texto))
+            {
+                string script = "return showConfirm('" + HttpUtility.JavaScriptStringEncode(texto) + "', this);";
+                Button boton = control as Button;
+                if (boton != null) boton.OnClientClick = script;
             }
 
             GridView grilla = control as GridView;

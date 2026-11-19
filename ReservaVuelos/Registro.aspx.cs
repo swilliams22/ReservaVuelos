@@ -4,8 +4,10 @@ using System;
 
 namespace ReservaVuelos
 {
-    public partial class Registro : System.Web.UI.Page
+    public partial class Registro : BasePage
     {
+        protected override string ClaveTitulo { get { return "ui.registro.001"; } }
+
         protected void Page_Load(object sender, EventArgs e)
         {
 
@@ -20,7 +22,7 @@ namespace ReservaVuelos
             string msg;
             if (!PasswordPolicyService.Validate(pwd, out msg))
             {
-                lblMsg.Text = msg;
+                lblMsg.Text = Traductor.Mensaje(msg);
                 return;
             }
 
@@ -36,12 +38,12 @@ namespace ReservaVuelos
             {
                 int id = srv.RegistrarUsuario(usuario, pwd);
                 // redirigir a login mostrando mensaje
-                Response.Redirect("Login.aspx?msg=" + Server.UrlEncode("Usuario creado correctamente. Inicie sesión."));
+                Response.Redirect("Login.aspx?msg=" + Server.UrlEncode(T("ui.registro.msg010")));
             }
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
-                lblMsg.Text = "Error al registrar: " + ex.Message;
+                lblMsg.Text = T("ui.registro.msg011") + Traductor.Mensaje(ex.Message);
             }
         }
     }

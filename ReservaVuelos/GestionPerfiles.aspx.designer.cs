@@ -22,5 +22,8 @@ namespace ReservaVuelos
         protected global::System.Web.UI.WebControls.DropDownList ddlDisponibles;
         protected global::System.Web.UI.WebControls.Button btnAgregar;
         protected global::System.Web.UI.WebControls.Button btnCerrar;
+        protected global::System.Web.UI.WebControls.TextBox txtFiltrogvPerfiles;
+        protected global::System.Web.UI.WebControls.TextBox txtFiltrogvAsignados;
+
     }
 }

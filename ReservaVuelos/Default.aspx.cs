@@ -7,8 +7,10 @@ using System.Web.UI.WebControls;
 
 namespace ReservaVuelos
 {
-    public partial class _Default : Page
+    public partial class _Default : BasePage
     {
+        protected override string ClaveTitulo { get { return "ui.default.001"; } }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             // Redirigir al buscador de vuelos como pagina principal

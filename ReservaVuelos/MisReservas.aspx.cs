@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
@@ -98,7 +98,7 @@ namespace ReservaVuelos
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = T("misreservas.msg.errorCargar") + ": " + ex.Message;
+                lblMsg.Text = T("misreservas.msg.errorCargar") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
         }
 
@@ -174,7 +174,7 @@ namespace ReservaVuelos
                 {
                     if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
                     lblMsg.ForeColor = System.Drawing.Color.Red;
-                    lblMsg.Text = T("misreservas.msg.errorCancelar") + ": " + ex.Message;
+                    lblMsg.Text = T("misreservas.msg.errorCancelar") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
                 }
             }
         }

@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.DAL;
 using System;
 using System.Collections.Generic;
@@ -24,7 +24,14 @@ namespace ReservaVuelos.Servicios
             "ReservaCabecera",
             "ReservaDetalle",
             "ReservaPasajero",
-            "Bitacora"
+            "Bitacora",
+            "Idioma",
+            "Etiqueta",
+            "Traduccion",
+            "Permisos",
+            "PermisoRelacion",
+            "ConfiguracionSistema",
+            "IntegridadError"
         };
 
         private static readonly int[] Primes =
@@ -209,8 +216,13 @@ namespace ReservaVuelos.Servicios
             using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                ValidateTable(cn, null, tableName, result);
-                UpdateLastValidation(cn, null);
+                using (var tx = cn.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    ValidateTable(cn, tx, tableName, result);
+                    ValidateTable(cn, tx, "ConfiguracionSistema", result);
+                    if (result.IsValid) UpdateLastValidation(cn, tx);
+                    tx.Commit();
+                }
             }
 
             if (!result.IsValid)
@@ -245,11 +257,12 @@ namespace ReservaVuelos.Servicios
             using (SqlConnection cn = ConexionDAL.GetConnection())
             {
                 cn.Open();
-                foreach (string table in CriticalTables)
+                using (var tx = cn.BeginTransaction(System.Data.IsolationLevel.Serializable))
                 {
-                    ValidateTable(cn, null, table, result);
+                    foreach (string table in CriticalTables) ValidateTable(cn, tx, table, result);
+                    if (result.IsValid) UpdateLastValidation(cn, tx);
+                    tx.Commit();
                 }
-                UpdateLastValidation(cn, null);
             }
 
             return result;
@@ -325,7 +338,14 @@ WHERE Estado = @EstadoActivo", cn))
                 cmd.Parameters.AddWithValue("@AccionTomada", string.IsNullOrWhiteSpace(action) ? "Validacion correcta" : action);
                 cmd.Parameters.AddWithValue("@EstadoActivo", "Activo");
                 cn.Open();
-                cmd.ExecuteNonQuery();
+                using (var tx = cn.BeginTransaction())
+                {
+                    cmd.Transaction = tx;
+                    BeforeChange(cn, tx, "IntegridadError");
+                    cmd.ExecuteNonQuery();
+                    RecalculateTable(cn, tx, "IntegridadError");
+                    tx.Commit();
+                }
             }
 
             SetContingency(false, null);
@@ -355,6 +375,11 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
 
         public void UpdateRecordDVH(SqlConnection cn, SqlTransaction tran, string tableName, int id)
         {
+            UpdateRecordDVH(cn, tran, tableName, id.ToString(CultureInfo.InvariantCulture));
+        }
+
+        private void UpdateRecordDVH(SqlConnection cn, SqlTransaction tran, string tableName, string id)
+        {
             int dvh = CalculateStoredRowDVH(cn, tran, tableName, id);
             using (SqlCommand cmd = new SqlCommand("UPDATE " + tableName + " SET DVH = @DVH WHERE " + GetPk(tableName) + " = @Id", cn, tran))
             {
@@ -366,7 +391,7 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, ValorDVV, FechaCalculo) VALUES (sourc
             UpdateRecordSnapshot(cn, tran, tableName, id, dvh);
         }
 
-        private void UpdateRecordSnapshot(SqlConnection cn, SqlTransaction tran, string tableName, int id, int dvh)
+        private void UpdateRecordSnapshot(SqlConnection cn, SqlTransaction tran, string tableName, string id, int dvh)
         {
             using (SqlCommand cmd = new SqlCommand(@"MERGE IntegridadRegistro AS target
 USING (SELECT @NombreTabla AS NombreTabla, @IdRegistro AS IdRegistro) AS source
@@ -375,7 +400,7 @@ WHEN MATCHED THEN UPDATE SET ValorDVH = @ValorDVH, FechaCalculo = @FechaCalculo
 WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) VALUES (@NombreTabla, @IdRegistro, @ValorDVH, @FechaCalculo);", cn, tran))
             {
                 cmd.Parameters.AddWithValue("@NombreTabla", tableName);
-                cmd.Parameters.AddWithValue("@IdRegistro", id.ToString(CultureInfo.InvariantCulture));
+                cmd.Parameters.AddWithValue("@IdRegistro", id);
                 cmd.Parameters.AddWithValue("@ValorDVH", dvh);
                 cmd.Parameters.AddWithValue("@FechaCalculo", DateTime.Now);
                 cmd.ExecuteNonQuery();
@@ -446,10 +471,10 @@ WHEN NOT MATCHED THEN INSERT (NombreTabla, IdRegistro, ValorDVH, FechaCalculo) V
             {
                 while (rdr.Read())
                 {
-                    int id = Convert.ToInt32(rdr[pk]);
+                    string id = RecordKey(tableName, rdr);
                     int stored = rdr["DVH"] != DBNull.Value ? Convert.ToInt32(rdr["DVH"]) : -1;
                     int calculated = CalculateDVHFromReader(tableName, rdr);
-                    actualRows[id.ToString(CultureInfo.InvariantCulture)] = Tuple.Create(stored, calculated);
+                    actualRows[id] = Tuple.Create(stored, calculated);
                 }
             }
 
@@ -548,14 +573,14 @@ WHERE NombreTabla = @NombreTabla", cn, tran))
 
         private void RecalculateTable(SqlConnection cn, SqlTransaction tran, string tableName)
         {
-            List<int> ids = new List<int>();
+            List<string> ids = new List<string>();
             using (SqlCommand cmd = new SqlCommand("SELECT " + GetPk(tableName) + " FROM " + tableName, cn, tran))
             using (SqlDataReader rdr = cmd.ExecuteReader())
             {
-                while (rdr.Read()) ids.Add(Convert.ToInt32(rdr[0]));
+                while (rdr.Read()) ids.Add(Convert.ToString(rdr[0], CultureInfo.InvariantCulture));
             }
 
-            foreach (int id in ids)
+            foreach (string id in ids)
             {
                 UpdateRecordDVH(cn, tran, tableName, id);
             }
@@ -570,7 +595,7 @@ WHERE NombreTabla = @NombreTabla
             }
         }
 
-        private int CalculateStoredRowDVH(SqlConnection cn, SqlTransaction tran, string tableName, int id)
+        private int CalculateStoredRowDVH(SqlConnection cn, SqlTransaction tran, string tableName, string id)
         {
             using (SqlCommand cmd = new SqlCommand("SELECT * FROM " + tableName + " WHERE " + GetPk(tableName) + " = @Id", cn, tran))
             {
@@ -603,6 +628,20 @@ WHERE NombreTabla = @NombreTabla
                     return CalculateDVH(JoinFields(rdr["IdReservaPasajero"], rdr["IdReservaCabecera"], rdr["IdPasajero"]));
                 case "Bitacora":
                     return CalculateDVH(JoinFields(rdr["IdBitacora"], rdr["Fecha"], rdr["Usuario"], rdr["Accion"], rdr["Criticidad"], rdr["Pantalla"]));
+                case "Idioma":
+                    return CalculateDVH(JoinFields(rdr["IdIdioma"], rdr["Codigo"], rdr["Nombre"], rdr["EsDefault"], rdr["Activo"]));
+                case "Etiqueta":
+                    return CalculateDVH(JoinFields(rdr["IdEtiqueta"], rdr["Clave"], rdr["Pantalla"], rdr["Descripcion"]));
+                case "Traduccion":
+                    return CalculateDVH(JoinFields(rdr["IdIdioma"], rdr["IdEtiqueta"], rdr["Texto"]));
+                case "Permisos":
+                    return CalculateDVH(JoinFields(rdr["IdPermiso"], rdr["Codigo"], rdr["EsGrupo"]));
+                case "PermisoRelacion":
+                    return CalculateDVH(JoinFields(rdr["IdPadre"], rdr["IdHijo"]));
+                case "ConfiguracionSistema":
+                    return CalculateDVH(JoinFields(rdr["IdConfiguracion"], rdr["ModoContingencia"], rdr["FechaUltimaValidacion"], rdr["MotivoContingencia"]));
+                case "IntegridadError":
+                    return CalculateDVH(JoinFields(rdr["IdError"], rdr["Fecha"], rdr["TipoError"], rdr["TipoOperacion"], rdr["NombreTabla"], rdr["IdRegistroAfectado"], rdr["ValorEsperado"], rdr["ValorCalculado"], rdr["Estado"], rdr["IdUsuarioAdministrador"], rdr["AccionTomada"]));
                 default:
                     throw new ArgumentException("Tabla no protegida: " + tableName);
             }
@@ -619,7 +658,8 @@ WHERE NombreTabla = @NombreTabla
 
                     using (SqlCommand cmd = new SqlCommand(@"INSERT INTO IntegridadError
 (Fecha, TipoError, TipoOperacion, NombreTabla, IdRegistroAfectado, ValorEsperado, ValorCalculado, Estado)
-VALUES (@Fecha, @TipoError, @TipoOperacion, @NombreTabla, @IdRegistroAfectado, @ValorEsperado, @ValorCalculado, @Estado)", cn))
+VALUES (@Fecha, @TipoError, @TipoOperacion, @NombreTabla, @IdRegistroAfectado, @ValorEsperado, @ValorCalculado, @Estado);
+SELECT CAST(SCOPE_IDENTITY() AS INT);", cn))
                     {
                         cmd.Parameters.AddWithValue("@Fecha", DateTime.Now);
                         cmd.Parameters.AddWithValue("@TipoError", error.TipoError);
@@ -629,7 +669,13 @@ VALUES (@Fecha, @TipoError, @TipoOperacion, @NombreTabla, @IdRegistroAfectado, @
                         cmd.Parameters.AddWithValue("@ValorEsperado", string.IsNullOrEmpty(error.ValorEsperado) ? (object)DBNull.Value : error.ValorEsperado);
                         cmd.Parameters.AddWithValue("@ValorCalculado", string.IsNullOrEmpty(error.ValorCalculado) ? (object)DBNull.Value : error.ValorCalculado);
                         cmd.Parameters.AddWithValue("@Estado", "Activo");
-                        cmd.ExecuteNonQuery();
+                        using (var tx = cn.BeginTransaction())
+                        {
+                            cmd.Transaction = tx;
+                            int idError = Convert.ToInt32(cmd.ExecuteScalar());
+                            UpdateRecordAndTableDVV(cn, tx, "IntegridadError", idError);
+                            tx.Commit();
+                        }
                     }
                 }
 
@@ -668,7 +714,13 @@ WHERE IdConfiguracion = 1", cn))
                 cmd.Parameters.AddWithValue("@ModoContingencia", enabled);
                 cmd.Parameters.AddWithValue("@MotivoContingencia", string.IsNullOrWhiteSpace(reason) ? (object)DBNull.Value : reason);
                 cn.Open();
-                cmd.ExecuteNonQuery();
+                using (var tx = cn.BeginTransaction())
+                {
+                    cmd.Transaction = tx;
+                    cmd.ExecuteNonQuery();
+                    RecalculateTable(cn, tx, "ConfiguracionSistema");
+                    tx.Commit();
+                }
             }
         }
 
@@ -702,11 +754,19 @@ WHERE IdConfiguracion = 1", cn, tran))
             {
                 cmd.Parameters.AddWithValue("@FechaUltimaValidacion", DateTime.Now);
                 cmd.ExecuteNonQuery();
+                RecalculateTable(cn, tran, "ConfiguracionSistema");
             }
         }
 
         private void EnsureInfrastructure(SqlConnection cn, SqlTransaction tran)
         {
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Idioma', 'DVH') IS NULL ALTER TABLE Idioma ADD DVH INT NOT NULL CONSTRAINT DF_Idioma_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Etiqueta', 'DVH') IS NULL ALTER TABLE Etiqueta ADD DVH INT NOT NULL CONSTRAINT DF_Etiqueta_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Traduccion', 'DVH') IS NULL ALTER TABLE Traduccion ADD DVH INT NOT NULL CONSTRAINT DF_Traduccion_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Permisos', 'DVH') IS NULL ALTER TABLE Permisos ADD DVH INT NOT NULL CONSTRAINT DF_Permisos_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('PermisoRelacion', 'DVH') IS NULL ALTER TABLE PermisoRelacion ADD DVH INT NOT NULL CONSTRAINT DF_PermisoRelacion_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('ConfiguracionSistema', 'DVH') IS NULL ALTER TABLE ConfiguracionSistema ADD DVH INT NOT NULL CONSTRAINT DF_ConfiguracionSistema_DVH DEFAULT (0)");
+            ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('IntegridadError', 'DVH') IS NULL ALTER TABLE IntegridadError ADD DVH INT NOT NULL CONSTRAINT DF_IntegridadError_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Usuarios', 'DVH') IS NULL ALTER TABLE Usuarios ADD DVH INT NOT NULL CONSTRAINT DF_Usuarios_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Clientes', 'DVH') IS NULL ALTER TABLE Clientes ADD DVH INT NOT NULL CONSTRAINT DF_Clientes_DVH DEFAULT (0)");
             ExecuteNonQuery(cn, tran, @"IF COL_LENGTH('Pasajeros', 'DVH') IS NULL ALTER TABLE Pasajeros ADD DVH INT NOT NULL CONSTRAINT DF_Pasajeros_DVH DEFAULT (0)");
@@ -770,6 +830,32 @@ VALUES (1, 0, NULL, NULL)");
             }
         }
 
+        private string RecordKey(string table, SqlDataReader reader)
+        {
+            if (table == "Traduccion") return reader["IdIdioma"] + ":" + reader["IdEtiqueta"];
+            if (table == "PermisoRelacion") return reader["IdPadre"] + ":" + reader["IdHijo"];
+            return Convert.ToString(reader[GetPk(table)], CultureInfo.InvariantCulture);
+        }
+
+        // Validate and lock before an authorized catalog mutation. Recomputing only after
+        // this check prevents accepting previously tampered rows as a new baseline.
+        public void BeforeChange(SqlConnection cn, SqlTransaction tx, params string[] tables)
+        {
+            foreach (string table in tables.OrderBy(t => t, StringComparer.Ordinal))
+            {
+                GetPk(table); // whitelist
+                using (var cmd = new SqlCommand("SELECT COUNT(*) FROM " + table + " WITH (TABLOCKX, HOLDLOCK)", cn, tx)) cmd.ExecuteScalar();
+                var result = new IntegrityValidationResult();
+                ValidateTable(cn, tx, table, result);
+                if (!result.IsValid) throw new InvalidOperationException("Inconsistencia de integridad en " + table + ".");
+            }
+        }
+
+        public void AfterChange(SqlConnection cn, SqlTransaction tx, params string[] tables)
+        {
+            foreach (string table in tables) RecalculateTable(cn, tx, table);
+        }
+
         private string GetPk(string tableName)
         {
             switch (tableName)
@@ -782,6 +868,13 @@ VALUES (1, 0, NULL, NULL)");
                 case "ReservaDetalle": return "IdReservaDetalle";
                 case "ReservaPasajero": return "IdReservaPasajero";
                 case "Bitacora": return "IdBitacora";
+                case "IntegridadError": return "IdError";
+                case "ConfiguracionSistema": return "IdConfiguracion";
+                case "PermisoRelacion": return "CONCAT(IdPadre, ':', IdHijo)";
+                case "Permisos": return "IdPermiso";
+                case "Traduccion": return "CONCAT(IdIdioma, ':', IdEtiqueta)";
+                case "Etiqueta": return "IdEtiqueta";
+                case "Idioma": return "IdIdioma";
                 default: throw new ArgumentException("Tabla no protegida: " + tableName);
             }
         }

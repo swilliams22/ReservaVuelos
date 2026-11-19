@@ -1,4 +1,5 @@
 ﻿using ReservaVuelos.BE;
+using ReservaVuelos.Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -127,27 +128,45 @@ ORDER BY i.EsDefault DESC, i.Nombre", cn))
         // El idioma nuevo queda inactivo hasta que el WebMaster termine de traducirlo.
         public int Crear(string codigo, string nombre)
         {
-            using (SqlConnection cn = ConexionDAL.GetConnection())
-            using (SqlCommand cmd = new SqlCommand(@"INSERT INTO Idioma (Codigo, Nombre, EsDefault, Activo) VALUES (@Codigo, @Nombre, 0, 0);
-SELECT CAST(SCOPE_IDENTITY() AS INT);", cn))
+            using (var cn = ConexionDAL.GetConnection())
             {
-                cmd.Parameters.AddWithValue("@Codigo", codigo);
-                cmd.Parameters.AddWithValue("@Nombre", nombre);
                 cn.Open();
-                return Convert.ToInt32(cmd.ExecuteScalar());
+                using (var tx = cn.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    var integrity = new IntegrityService();
+                    integrity.BeforeChange(cn, tx, "Idioma");
+                    int id;
+                    using (var cmd = new SqlCommand("INSERT INTO Idioma (Codigo, Nombre, EsDefault, Activo) VALUES (@Codigo, @Nombre, 0, 0); SELECT CAST(SCOPE_IDENTITY() AS INT);", cn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@Codigo", codigo);
+                        cmd.Parameters.AddWithValue("@Nombre", nombre);
+                        id = Convert.ToInt32(cmd.ExecuteScalar());
+                    }
+                    integrity.AfterChange(cn, tx, "Idioma");
+                    tx.Commit();
+                    return id;
+                }
             }
         }
 
-        // El idioma por defecto no se puede desactivar.
         public void CambiarActivo(int idIdioma, bool activo)
         {
-            using (SqlConnection cn = ConexionDAL.GetConnection())
-            using (SqlCommand cmd = new SqlCommand("UPDATE Idioma SET Activo = @Activo WHERE IdIdioma = @IdIdioma AND (@Activo = 1 OR EsDefault = 0)", cn))
+            using (var cn = ConexionDAL.GetConnection())
             {
-                cmd.Parameters.AddWithValue("@Activo", activo);
-                cmd.Parameters.AddWithValue("@IdIdioma", idIdioma);
                 cn.Open();
-                cmd.ExecuteNonQuery();
+                using (var tx = cn.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    var integrity = new IntegrityService();
+                    integrity.BeforeChange(cn, tx, "Idioma");
+                    using (var cmd = new SqlCommand("UPDATE Idioma SET Activo = @Activo WHERE IdIdioma = @IdIdioma AND (@Activo = 1 OR EsDefault = 0)", cn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@Activo", activo);
+                        cmd.Parameters.AddWithValue("@IdIdioma", idIdioma);
+                        cmd.ExecuteNonQuery();
+                    }
+                    integrity.AfterChange(cn, tx, "Idioma");
+                    tx.Commit();
+                }
             }
         }
 
@@ -211,6 +230,8 @@ ORDER BY e.Pantalla, e.Clave", cn))
                 {
                     try
                     {
+                        var integrity = new IntegrityService();
+                        integrity.BeforeChange(cn, tx, "Traduccion");
                         foreach (KeyValuePair<int, string> par in textos)
                         {
                             string texto = (par.Value ?? "").Trim();
@@ -225,6 +246,7 @@ IF @@ROWCOUNT = 0 INSERT INTO Traduccion (IdIdioma, IdEtiqueta, Texto) VALUES (@
                                 cmd.ExecuteNonQuery();
                             }
                         }
+                        integrity.AfterChange(cn, tx, "Traduccion");
                         tx.Commit();
                     }
                     catch

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
@@ -8,8 +8,10 @@ using System.Text;
 
 namespace ReservaVuelos
 {
-    public partial class AdminVuelos : System.Web.UI.Page
+    public partial class AdminVuelos : BasePage
     {
+        protected override string ClaveTitulo { get { return "ui.adminvuelos.001"; } }
+
         private VueloBLL _vBLL = new VueloBLL();
         private BitacoraBLL _bBLL = new BitacoraBLL();
 
@@ -55,23 +57,24 @@ namespace ReservaVuelos
                         }
                         BindGrid();
                         lblMsg.ForeColor = System.Drawing.Color.Green;
-                        lblMsg.Text = "Vuelo dado de baja correctamente." + (canceledCount > 0 ? (" Reservas canceladas: " + canceledCount) : string.Empty);
+                        lblMsg.Text = T("ui.adminvuelos.msg027") + (canceledCount > 0 ? (T("ui.adminvuelos.msg028") + canceledCount) : string.Empty);
                     }
                     else
                     {
-                        lblMsg.Text = "No se encontró el vuelo.";
+                        lblMsg.Text = T("ui.adminvuelos.msg029");
                     }
                 }
                 catch (Exception ex)
                 {
                     if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
-                    lblMsg.Text = "Error: " + ex.Message;
+                    lblMsg.Text = T("ui.adminvuelos.msg030") + Traductor.Mensaje(ex.Message);
                 }
             }
         }
 
         protected void ddlFiltro_SelectedIndexChanged(object sender, EventArgs e)
         {
+            gvVuelosAdmin.PageIndex = 0;
             BindGrid();
         }
 
@@ -80,7 +83,8 @@ namespace ReservaVuelos
             string filtro = "Activos";
             if (ddlFiltro != null) filtro = ddlFiltro.SelectedValue;
             List<Vuelo> lista = _vBLL.Search(null, null, null, filtro);
-            gvVuelosAdmin.DataSource = lista;
+            gvVuelosAdmin.DataSource = FiltrarGrilla(lista, FiltrogvVuelosAdmin, v => v.Origen + " " + v.Destino);
+            gvVuelosAdmin.PageIndex = Math.Min(gvVuelosAdmin.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvVuelosAdmin.DataSource).Count - 1) / gvVuelosAdmin.PageSize);
             gvVuelosAdmin.DataBind();
         }
 
@@ -103,12 +107,12 @@ namespace ReservaVuelos
                 _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = SesionService.GetUser().Email, Accion = $"Vuelo creado. IdVuelo: {idVuelo}", Criticidad = 1, Pantalla = "AdminVuelos" });
                 BindGrid();
                 lblMsg.ForeColor = System.Drawing.Color.Green;
-                lblMsg.Text = "Vuelo creado.";
+                lblMsg.Text = T("ui.adminvuelos.msg031");
             }
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
-                lblMsg.Text = "Error: " + ex.Message;
+                lblMsg.Text = T("ui.adminvuelos.msg030") + Traductor.Mensaje(ex.Message);
             }
         }
 
@@ -119,7 +123,7 @@ namespace ReservaVuelos
             string token = SesionService.GetTokenServicio();
             if (string.IsNullOrEmpty(token))
             {
-                lblXmlResultado.Text = "Cierre sesión y vuelva a ingresar para usar el web service.";
+                lblXmlResultado.Text = T("ui.adminvuelos.msg032");
                 return;
             }
 
@@ -140,7 +144,7 @@ namespace ReservaVuelos
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
-                lblXmlResultado.Text = Server.HtmlEncode("Error al exportar: " + ex.Message);
+                lblXmlResultado.Text = Server.HtmlEncode(T("ui.adminvuelos.msg033") + Traductor.Mensaje(ex.Message));
             }
         }
 
@@ -150,18 +154,18 @@ namespace ReservaVuelos
             lblXmlResultado.ForeColor = System.Drawing.Color.Red;
             if (!fuXml.HasFile)
             {
-                lblXmlResultado.Text = "Seleccione un archivo XML.";
+                lblXmlResultado.Text = T("ui.adminvuelos.msg034");
                 return;
             }
             if (fuXml.PostedFile.ContentLength > XmlVuelosService.MAX_BYTES)
             {
-                lblXmlResultado.Text = "El archivo supera el máximo de " + (XmlVuelosService.MAX_BYTES / 1024) + " KB.";
+                lblXmlResultado.Text = T("ui.adminvuelos.msg035") + (XmlVuelosService.MAX_BYTES / 1024) + " KB.";
                 return;
             }
             string token = SesionService.GetTokenServicio();
             if (string.IsNullOrEmpty(token))
             {
-                lblXmlResultado.Text = "Cierre sesión y vuelva a ingresar para usar el web service.";
+                lblXmlResultado.Text = T("ui.adminvuelos.msg032");
                 return;
             }
 
@@ -175,16 +179,16 @@ namespace ReservaVuelos
                 ReservaVuelos.AeroLinkServiceReference.ResultadoImportacionWS r = AeroLinkCliente.Llamar(c => c.ImportarVuelosXml(token, xml));
                 if (!r.Exitoso)
                 {
-                    lblXmlResultado.Text = Server.HtmlEncode(r.Mensaje);
+                    lblXmlResultado.Text = Server.HtmlEncode(Traductor.Mensaje(r.Mensaje));
                     return;
                 }
 
                 BindGrid();
 
                 StringBuilder sb = new StringBuilder();
-                sb.Append(Server.HtmlEncode($"Vuelos en el archivo: {r.Total}. Importados: {r.Importados}. Rechazados: {r.Rechazados.Count}."));
+                sb.Append(Server.HtmlEncode(string.Format(T("ui.adminvuelos.importacion.resumen"), r.Total, r.Importados, r.Rechazados.Count)));
                 foreach (string motivo in r.Rechazados)
-                    sb.Append("<br />").Append(Server.HtmlEncode(motivo));
+                    sb.Append("<br />").Append(Server.HtmlEncode(Traductor.Mensaje(motivo)));
                 lblXmlResultado.Text = sb.ToString();
                 lblXmlResultado.ForeColor = r.Rechazados.Count == 0 ? System.Drawing.Color.Green
                     : r.Importados > 0 ? System.Drawing.Color.DarkOrange : System.Drawing.Color.Red;
@@ -192,8 +196,24 @@ namespace ReservaVuelos
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
-                lblXmlResultado.Text = Server.HtmlEncode("Error al importar: " + ex.Message);
+                lblXmlResultado.Text = Server.HtmlEncode(T("ui.adminvuelos.msg036") + Traductor.Mensaje(ex.Message));
             }
         }
+        protected void gvVuelosAdmin_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            gvVuelosAdmin.PageIndex = e.NewPageIndex;
+            BindGrid();
+        }
+
+        private string FiltrogvVuelosAdmin { get { return ViewState["FiltrogvVuelosAdmin"] as string ?? ""; } set { ViewState["FiltrogvVuelosAdmin"] = value; } }
+        protected void FiltrargvVuelosAdmin(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvVuelosAdmin.Text = "";
+            FiltrogvVuelosAdmin = txtFiltrogvVuelosAdmin.Text.Trim();
+            gvVuelosAdmin.PageIndex = 0;
+            BindGrid();
+        }
+
+
     }
 }

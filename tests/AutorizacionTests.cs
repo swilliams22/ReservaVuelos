@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -32,6 +32,16 @@ class AutorizacionTests
     {
         using (var cn = ConexionDAL.GetConnection())
         using (var cmd = new SqlCommand(sql, cn)) { cn.Open(); return cmd.ExecuteScalar(); }
+    }
+    static void EjecutarScript(string script)
+    {
+        using(var cn=ConexionDAL.GetConnection())
+        {
+            cn.Open();
+            foreach(var lote in Regex.Split(script,@"^\s*GO\s*$",RegexOptions.Multiline|RegexOptions.IgnoreCase))
+                if(!string.IsNullOrWhiteSpace(lote))
+                    using(var cmd=new SqlCommand(lote,cn)) cmd.ExecuteNonQuery();
+        }
     }
     static Usuario Crear(string rol)
     {
@@ -68,22 +78,20 @@ class AutorizacionTests
 
         // Simular la base anterior al Composite con integridad inicializada.
         new IntegrityService().EnsureStartupValidation();
-        Sql("DROP TABLE dbo.PermisoRelacion; DROP TABLE dbo.Permisos; ALTER TABLE dbo.Usuarios DROP CONSTRAINT CK_Usuarios_Rol; ALTER TABLE dbo.Usuarios ADD CONSTRAINT CK_Usuarios_Rol CHECK (Rol IN ('Usuario','Administrador'));");
+        Sql("DROP TRIGGER IF EXISTS dbo.TR_Usuarios_ValidarRol; DROP TABLE dbo.PermisoRelacion; DROP TABLE dbo.Permisos; IF EXISTS(SELECT 1 FROM sys.check_constraints WHERE name='CK_Usuarios_Rol') ALTER TABLE dbo.Usuarios DROP CONSTRAINT CK_Usuarios_Rol; ALTER TABLE dbo.Usuarios ADD CONSTRAINT CK_Usuarios_Rol CHECK (Rol IN ('Usuario','Administrador','WebMaster')); DELETE IntegridadDVV WHERE NombreTabla IN('Permisos','PermisoRelacion'); DELETE IntegridadRegistro WHERE NombreTabla IN('Permisos','PermisoRelacion');");
         string database;
         using (var cn=ConexionDAL.GetConnection()) database=cn.Database;
         var deployment=File.ReadAllText(Path.Combine(Environment.GetEnvironmentVariable("AUTH_SOURCE"),"..","base","ActualizarBD_2026-10-15.sql")).Replace("ReservaVuelosDB",database);
         int cuentasAntes=Convert.ToInt32(Sql("SELECT COUNT(*) FROM Usuarios"));
-        foreach(var lote in Regex.Split(deployment,@"^\s*GO\s*$",RegexOptions.Multiline|RegexOptions.IgnoreCase))
-            if(!string.IsNullOrWhiteSpace(lote)) Sql(lote);
+        EjecutarScript(deployment);
         Verificar(Convert.ToInt32(Sql("SELECT COUNT(*) FROM Usuarios"))==cuentasAntes,"Actualización conserva las cuentas existentes");
         Verificar(new PermisoDAL().ObtenerPorRol("WebMaster").TienePermiso(Permisos.RestaurarBackup),"Actualización crea el grupo WebMaster con permisos técnicos");
         Verificar(new IntegrityService().ValidateTable("Usuarios").IsValid,"Migración conserva DVH/DVV de Usuarios");
         Sql("DELETE r FROM PermisoRelacion r JOIN Permisos p ON p.IdPermiso=r.IdPadre JOIN Permisos h ON h.IdPermiso=r.IdHijo WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'");
-        foreach(var lote in Regex.Split(deployment,@"^\s*GO\s*$",RegexOptions.Multiline|RegexOptions.IgnoreCase))
-            if(!string.IsNullOrWhiteSpace(lote)) Sql(lote);
+        EjecutarScript(deployment);
         Verificar(Convert.ToInt32(Sql("SELECT COUNT(*) FROM Usuarios"))==cuentasAntes,"Reejecución de actualización no cambia cuentas");
         Verificar(!new PermisoDAL().ObtenerPorRol("Administrador").TienePermiso(Permisos.CrearVuelo),"Reejecución no repone permisos revocados");
-        Sql("INSERT PermisoRelacion SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'");
+        Sql("INSERT PermisoRelacion(IdPadre,IdHijo) SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'");
 
         var usuario=Crear("Usuario"); var admin=Crear("Administrador"); var wm=Crear("WebMaster");
         // Regresión: el selector propone Córdoba y el seed guarda Cordoba.
@@ -100,9 +108,10 @@ class AutorizacionTests
             foreach (var campo in typeof(Permisos).GetFields(BindingFlags.Public|BindingFlags.Static))
             {
                 var codigo=(string)campo.GetRawConstantValue();
-                bool esperado=codigo.StartsWith("Reservas.") || codigo.StartsWith("Datos.") ||
+                bool operacionUsuario=codigo.StartsWith("Reservas.") || codigo.StartsWith("Datos.");
+                bool esperado=(u.Rol=="Usuario" && operacionUsuario) ||
                     (u.Rol=="Administrador" && codigo.StartsWith("Vuelos.")) ||
-                    (u.Rol=="WebMaster" && !codigo.StartsWith("Vuelos."));
+                    (u.Rol=="WebMaster" && !codigo.StartsWith("Vuelos.") && !operacionUsuario);
                 Verificar(AutorizacionService.TienePermiso(u,codigo)==esperado,u.Rol+": "+codigo);
             }
         }
@@ -138,16 +147,18 @@ class AutorizacionTests
         Sql(bajaRelacion);
         Gate(admin,"AdminVuelos.aspx");
         Rechaza(()=>AutorizacionService.Exigir(Permisos.CrearVuelo),"Permiso de acción revocado con sesión abierta");
-        Sql("INSERT PermisoRelacion SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'");
+        Sql("INSERT PermisoRelacion(IdPadre,IdHijo) SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'");
 
-        try { Sql("INSERT PermisoRelacion SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='OperacionesUsuario' AND h.Codigo='Usuario'"); throw new Exception("SQL aceptó ciclo"); }
+        try { Sql("INSERT PermisoRelacion(IdPadre,IdHijo) SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='OperacionesUsuario' AND h.Codigo='Usuario'"); throw new Exception("SQL aceptó ciclo"); }
         catch (SqlException ex) { Verificar(ex.Number==50002,"SQL impide ciclos de grupos"); }
-        try { Sql("INSERT PermisoRelacion SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='Vuelos.Crear' AND h.Codigo='Usuario'"); throw new Exception("SQL aceptó hoja con hijos"); }
+        try { Sql("INSERT PermisoRelacion(IdPadre,IdHijo) SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='Vuelos.Crear' AND h.Codigo='Usuario'"); throw new Exception("SQL aceptó hoja con hijos"); }
         catch (SqlException ex) { Verificar(ex.Number==50001,"SQL impide hojas con hijos"); }
         try { Sql("UPDATE Permisos SET EsGrupo=0 WHERE Codigo='GestionVuelos'"); throw new Exception("SQL cambió grupo con hijos a hoja"); }
         catch (SqlException ex) { Verificar(ex.Number==50003,"SQL protege el tipo de grupo"); }
 
         HttpContext.Current=null;
+        // Las modificaciones SQL anteriores son datos controlados del fixture, no acciones de la UI.
+        new IntegrityService().RecalculateAll(null, "Preparacion del fixture SOAP");
         var ws=new AeroLinkWS();
         var login=ws.Login(admin.Email,"Prueba-Composite-2026!");
         if (!login.Exitoso) throw new Exception("Login SOAP de prueba: "+login.Codigo+" "+login.Mensaje);

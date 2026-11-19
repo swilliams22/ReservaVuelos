@@ -14,7 +14,13 @@
     </asp:Panel>
 
     <h4 runat="server" data-i18n="perfiles.lista.titulo">Perfiles</h4>
-    <asp:GridView ID="gvPerfiles" runat="server" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdPermiso"
+    <div class="filter-row">
+        <asp:Label runat="server" AssociatedControlID="txtFiltrogvPerfiles" Text="Buscar en la tabla" data-i18n="grillas.buscar" />
+        <asp:TextBox ID="txtFiltrogvPerfiles" runat="server" MaxLength="150" />
+        <asp:Button runat="server" Text="Filtrar" data-i18n="grillas.filtrar" OnClick="FiltrargvPerfiles" CommandArgument="aplicar" CausesValidation="false" CssClass="btn-grid" />
+        <asp:Button runat="server" Text="Limpiar" data-i18n="grillas.limpiar" OnClick="FiltrargvPerfiles" CommandArgument="limpiar" CausesValidation="false" CssClass="btn-grid" />
+    </div>
+    <asp:GridView ID="gvPerfiles" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvPerfiles_PageIndexChanging" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdPermiso"
         OnRowDataBound="gvPerfiles_RowDataBound" OnRowCommand="gvPerfiles_RowCommand"
         data-i18n-headers="perfiles.col.nombre,perfiles.col.usuarios,perfiles.col.acciones">
         <Columns>
@@ -40,7 +46,13 @@
             </div>
             <div class="col-md-7">
                 <h5 runat="server" data-i18n="perfiles.asignados.titulo">Asignados directamente</h5>
-                <asp:GridView ID="gvAsignados" runat="server" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdPermiso"
+                <div class="filter-row">
+        <asp:Label runat="server" AssociatedControlID="txtFiltrogvAsignados" Text="Buscar en la tabla" data-i18n="grillas.buscar" />
+        <asp:TextBox ID="txtFiltrogvAsignados" runat="server" MaxLength="150" />
+        <asp:Button runat="server" Text="Filtrar" data-i18n="grillas.filtrar" OnClick="FiltrargvAsignados" CommandArgument="aplicar" CausesValidation="false" CssClass="btn-grid" />
+        <asp:Button runat="server" Text="Limpiar" data-i18n="grillas.limpiar" OnClick="FiltrargvAsignados" CommandArgument="limpiar" CausesValidation="false" CssClass="btn-grid" />
+    </div>
+    <asp:GridView ID="gvAsignados" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvAsignados_PageIndexChanging" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdPermiso"
                     OnRowDataBound="gvAsignados_RowDataBound" OnRowCommand="gvAsignados_RowCommand"
                     data-i18n-headers="perfiles.col.permiso,perfiles.col.tipo,perfiles.col.acciones">
                     <Columns>

@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.DAL;
 using ReservaVuelos.Servicios;
@@ -12,8 +12,10 @@ using System.Linq;
 
 namespace ReservaVuelos
 {
-    public partial class Backup : System.Web.UI.Page
+    public partial class Backup : BasePage
     {
+        protected override string ClaveTitulo { get { return "ui.backup.001"; } }
+
         private BitacoraBLL _bBLL = new BitacoraBLL();
 
         private class BackupListItem
@@ -82,7 +84,7 @@ namespace ReservaVuelos
                     catch (Exception exDir)
                     {
                         advertencia = true;
-                        mensaje = "No se pudo crear/verificar la carpeta en SQL Server. " + exDir.Message;
+                        mensaje = T("ui.backup.msg027") + exDir.Message;
                     }
 
                     try
@@ -97,7 +99,7 @@ namespace ReservaVuelos
                     catch (Exception exBackup)
                     {
                         backupGenerado = false;
-                        mensaje = "Error al generar backup. " + exBackup.Message;
+                        mensaje = T("ui.backup.msg028") + exBackup.Message;
                     }
 
                     if (backupGenerado)
@@ -114,27 +116,27 @@ namespace ReservaVuelos
                         {
                             advertencia = true;
                             if (!string.IsNullOrWhiteSpace(mensaje)) mensaje += " ";
-                            mensaje += "Backup generado, pero no se pudo verificar con RESTORE VERIFYONLY. " + exVerify.Message;
+                            mensaje += T("ui.backup.msg029") + exVerify.Message;
                         }
                     }
                 }
 
                 if (backupGenerado && !advertencia)
                 {
-                    if (string.IsNullOrWhiteSpace(mensaje)) mensaje = "Backup generado y verificado correctamente.";
-                    MostrarResultadoBackup(archivo, fecha, rutaCompleta, "Éxito", mensaje, System.Drawing.Color.Green);
+                    if (string.IsNullOrWhiteSpace(mensaje)) mensaje = T("ui.backup.msg030");
+                    MostrarResultadoBackup(archivo, fecha, rutaCompleta, T("ui.backup.msg034"), mensaje, System.Drawing.Color.Green);
                     _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Backup generado correctamente. Archivo: " + archivo + " - Ruta: " + rutaCompleta, Criticidad = 1, Pantalla = "Backup" });
                 }
                 else if (backupGenerado)
                 {
-                    if (string.IsNullOrWhiteSpace(mensaje)) mensaje = "Backup generado con advertencias de permisos/configuración.";
-                    MostrarResultadoBackup(archivo, fecha, rutaCompleta, "Advertencia", mensaje, System.Drawing.Color.DarkOrange);
+                    if (string.IsNullOrWhiteSpace(mensaje)) mensaje = T("ui.backup.msg031");
+                    MostrarResultadoBackup(archivo, fecha, rutaCompleta, T("ui.backup.msg035"), mensaje, System.Drawing.Color.DarkOrange);
                     _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Backup generado con advertencias. Archivo: " + archivo + " - Ruta: " + rutaCompleta + " - Detalle: " + mensaje, Criticidad = 2, Pantalla = "Backup" });
                 }
                 else
                 {
-                    if (string.IsNullOrWhiteSpace(mensaje)) mensaje = "No se pudo generar el backup.";
-                    MostrarResultadoBackup(archivo, fecha, rutaCompleta, "Error", mensaje, System.Drawing.Color.Red);
+                    if (string.IsNullOrWhiteSpace(mensaje)) mensaje = T("ui.backup.msg032");
+                    MostrarResultadoBackup(archivo, fecha, rutaCompleta, T("ui.backup.msg036"), mensaje, System.Drawing.Color.Red);
                     _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Error al generar backup. Archivo: " + archivo + " - Ruta: " + rutaCompleta + " - Detalle: " + mensaje, Criticidad = 3, Pantalla = "Backup" });
                 }
 
@@ -142,9 +144,9 @@ namespace ReservaVuelos
             }
             catch (Exception ex)
             {
-                string error = "Error inesperado al ejecutar backup. " + ex.Message;
-                MostrarResultadoBackup(archivo, fecha, rutaCompleta, "Error", error, System.Drawing.Color.Red);
-                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user != null ? user.Email : "Sistema", Accion = "Error inesperado al generar backup. Detalle: " + ex.Message, Criticidad = 3, Pantalla = "Backup" });
+                string error = T("ui.backup.msg033") + Traductor.Mensaje(ex.Message);
+                MostrarResultadoBackup(archivo, fecha, rutaCompleta, T("ui.backup.msg036"), error, System.Drawing.Color.Red);
+                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user != null ? user.Email : "Sistema", Accion = "Error inesperado al generar backup. Detalle: " + Traductor.Mensaje(ex.Message), Criticidad = 3, Pantalla = "Backup" });
             }
         }
 
@@ -180,7 +182,7 @@ namespace ReservaVuelos
             string mensajeValidacion;
             if (!TryObtenerRutaBackupValida(out rutaBackup, out mensajeValidacion))
             {
-                MostrarResultadoRestore("Error", mensajeValidacion, System.Drawing.Color.Red);
+                MostrarResultadoRestore(T("ui.backup.msg036"), mensajeValidacion, System.Drawing.Color.Red);
                 return;
             }
 
@@ -213,21 +215,21 @@ namespace ReservaVuelos
                     cmdRestore.ExecuteNonQuery();
                 }
 
-                MostrarResultadoRestore("Éxito", "Restauración completada correctamente con el archivo " + archivo + ".", System.Drawing.Color.Green);
+                MostrarResultadoRestore(T("ui.backup.msg034"), T("ui.backup.msg037") + archivo + ".", System.Drawing.Color.Green);
                 _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Restauración de backup exitosa. Archivo: " + archivo + " - Ruta: " + rutaBackup, Criticidad = 1, Pantalla = "Backup" });
 
                 IntegrityValidationResult integrityResult = new IntegrityService().TryResolveAfterValidation(user.IdUsuario, "Restauracion de backup validada");
                 if (!integrityResult.IsValid)
                 {
-                    MostrarResultadoRestore("Advertencia", "Backup restaurado, pero persisten inconsistencias de integridad. El modo de contingencia permanece activo.", System.Drawing.Color.DarkOrange);
+                    MostrarResultadoRestore(T("ui.backup.msg035"), T("ui.backup.msg038"), System.Drawing.Color.DarkOrange);
                     _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Restauración finalizada con inconsistencias de integridad persistentes.", Criticidad = 4, Pantalla = "Backup" });
                 }
             }
             catch (Exception ex)
             {
-                string mensaje = "Error al restaurar backup. " + ex.Message;
-                MostrarResultadoRestore("Error", mensaje, System.Drawing.Color.Red);
-                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Error en restauración de backup. Archivo: " + archivo + " - Ruta: " + rutaBackup + " - Detalle: " + ex.Message, Criticidad = 3, Pantalla = "Backup" });
+                string mensaje = T("ui.backup.msg039") + Traductor.Mensaje(ex.Message);
+                MostrarResultadoRestore(T("ui.backup.msg036"), mensaje, System.Drawing.Color.Red);
+                _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = "Error en restauración de backup. Archivo: " + archivo + " - Ruta: " + rutaBackup + " - Detalle: " + Traductor.Mensaje(ex.Message), Criticidad = 3, Pantalla = "Backup" });
             }
             finally
             {
@@ -243,7 +245,7 @@ namespace ReservaVuelos
                 }
                 catch (Exception exMulti)
                 {
-                    string warning = "Advertencia: no se pudo asegurar MULTI_USER. " + exMulti.Message;
+                    string warning = T("ui.backup.msg040") + exMulti.Message;
                     if (string.IsNullOrWhiteSpace(lblRestoreMensaje.Text)) lblRestoreMensaje.Text = warning;
                     else lblRestoreMensaje.Text += " " + warning;
                     _bBLL.Create(new ReservaVuelos.BE.Bitacora { Fecha = DateTime.Now, Usuario = user.Email, Accion = warning + " Archivo: " + archivo + " - Ruta: " + rutaBackup, Criticidad = 2, Pantalla = "Backup" });
@@ -282,10 +284,11 @@ namespace ReservaVuelos
             }
             catch (Exception ex)
             {
-                MostrarResultadoRestore("Advertencia", "No se pudo leer la carpeta de backups: " + ex.Message, System.Drawing.Color.DarkOrange);
+                MostrarResultadoRestore(T("ui.backup.msg035"), T("ui.backup.msg041") + Traductor.Mensaje(ex.Message), System.Drawing.Color.DarkOrange);
             }
 
-            gvBackupsDisponibles.DataSource = lista.OrderByDescending(x => x.FechaOrden).ToList();
+            gvBackupsDisponibles.DataSource = FiltrarGrilla(lista.OrderByDescending(x => x.FechaOrden).ToList(), FiltrogvBackupsDisponibles, v => v.Nombre + " " + v.Fecha);
+            gvBackupsDisponibles.PageIndex = Math.Min(gvBackupsDisponibles.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvBackupsDisponibles.DataSource).Count - 1) / gvBackupsDisponibles.PageSize);
             gvBackupsDisponibles.DataBind();
         }
 
@@ -297,13 +300,13 @@ namespace ReservaVuelos
             string seleccion = hfBackupSeleccionado.Value == null ? string.Empty : hfBackupSeleccionado.Value.Trim();
             if (string.IsNullOrWhiteSpace(seleccion))
             {
-                mensaje = "Debe seleccionar un archivo de backup de la lista.";
+                mensaje = T("ui.backup.msg042");
                 return false;
             }
 
             if (seleccion.Contains(".."))
             {
-                mensaje = "Ruta inválida.";
+                mensaje = T("ui.backup.msg043");
                 return false;
             }
 
@@ -313,19 +316,19 @@ namespace ReservaVuelos
             string fullPath = Path.GetFullPath(seleccion);
             if (!fullPath.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
             {
-                mensaje = "No se permite usar rutas externas a la carpeta de backups.";
+                mensaje = T("ui.backup.msg044");
                 return false;
             }
 
             if (!string.Equals(Path.GetExtension(fullPath), ".bak", StringComparison.OrdinalIgnoreCase))
             {
-                mensaje = "El archivo seleccionado no es un .bak válido.";
+                mensaje = T("ui.backup.msg045");
                 return false;
             }
 
             if (!File.Exists(fullPath))
             {
-                mensaje = "El archivo seleccionado no existe.";
+                mensaje = T("ui.backup.msg046");
                 return false;
             }
 
@@ -400,5 +403,21 @@ namespace ReservaVuelos
             lblRestoreResultado.ForeColor = color;
             lblRestoreMensaje.Text = mensaje;
         }
+        protected void gvBackupsDisponibles_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            gvBackupsDisponibles.PageIndex = e.NewPageIndex;
+            CargarBackupsDisponibles();
+        }
+
+        private string FiltrogvBackupsDisponibles { get { return ViewState["FiltrogvBackupsDisponibles"] as string ?? ""; } set { ViewState["FiltrogvBackupsDisponibles"] = value; } }
+        protected void FiltrargvBackupsDisponibles(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvBackupsDisponibles.Text = "";
+            FiltrogvBackupsDisponibles = txtFiltrogvBackupsDisponibles.Text.Trim();
+            gvBackupsDisponibles.PageIndex = 0;
+            CargarBackupsDisponibles();
+        }
+
+
     }
 }

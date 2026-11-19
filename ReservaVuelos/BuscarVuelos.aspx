@@ -137,7 +137,7 @@
     </datalist>
     <br />
     <asp:Label runat="server" data-i18n="buscar.grid.ida" Text="Vuelos - Ida" Font-Bold="True" />
-    <asp:GridView ID="gvVuelos" runat="server" CssClass="grid" data-i18n-headers="buscar.col.id,buscar.col.origen,buscar.col.destino,buscar.col.fecha,buscar.col.hora,buscar.col.precio,buscar.col.cupos," AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo">
+    <asp:GridView ID="gvVuelos" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvVuelos_PageIndexChanging" CssClass="grid" data-i18n-headers="buscar.col.id,buscar.col.origen,buscar.col.destino,buscar.col.fecha,buscar.col.hora,buscar.col.precio,buscar.col.cupos," AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo">
         <Columns>
             <asp:BoundField DataField="IdVuelo" HeaderText="Id" />
             <asp:BoundField DataField="Origen" HeaderText="Origen" />
@@ -156,7 +156,7 @@
     </asp:GridView>
 
     <asp:Label runat="server" ID="lblVueltaTitle" data-i18n="buscar.grid.vuelta" Text="Vuelos - Vuelta" Font-Bold="True" Visible="false" />
-    <asp:GridView ID="gvVuelosReturn" runat="server" CssClass="grid" data-i18n-headers="buscar.col.id,buscar.col.origen,buscar.col.destino,buscar.col.fecha,buscar.col.hora,buscar.col.precio,buscar.col.cupos," AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo" Visible="false">
+    <asp:GridView ID="gvVuelosReturn" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvVuelosReturn_PageIndexChanging" CssClass="grid" data-i18n-headers="buscar.col.id,buscar.col.origen,buscar.col.destino,buscar.col.fecha,buscar.col.hora,buscar.col.precio,buscar.col.cupos," AutoGenerateColumns="false" OnRowCommand="gvVuelos_RowCommand" DataKeyNames="IdVuelo" Visible="false">
         <Columns>
             <asp:BoundField DataField="IdVuelo" HeaderText="Id" />
             <asp:BoundField DataField="Origen" HeaderText="Origen" />

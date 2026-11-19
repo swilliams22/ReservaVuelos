@@ -20,5 +20,7 @@ namespace ReservaVuelos
         protected global::System.Web.UI.WebControls.Button btnImportar;
         protected global::System.Web.UI.WebControls.Label lblXmlResultado;
         protected global::System.Web.UI.WebControls.GridView gvVuelosAdmin;
+        protected global::System.Web.UI.WebControls.TextBox txtFiltrogvVuelosAdmin;
+
     }
 }

@@ -14,7 +14,13 @@
     </div>
 
     <h4 runat="server" data-i18n="idiomas.lista.titulo">Idiomas</h4>
-    <asp:GridView ID="gvIdiomas" runat="server" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdIdioma"
+    <div class="filter-row">
+        <asp:Label runat="server" AssociatedControlID="txtFiltrogvIdiomas" Text="Buscar en la tabla" data-i18n="grillas.buscar" />
+        <asp:TextBox ID="txtFiltrogvIdiomas" runat="server" MaxLength="150" />
+        <asp:Button runat="server" Text="Filtrar" data-i18n="grillas.filtrar" OnClick="FiltrargvIdiomas" CommandArgument="aplicar" CausesValidation="false" CssClass="btn-grid" />
+        <asp:Button runat="server" Text="Limpiar" data-i18n="grillas.limpiar" OnClick="FiltrargvIdiomas" CommandArgument="limpiar" CausesValidation="false" CssClass="btn-grid" />
+    </div>
+    <asp:GridView ID="gvIdiomas" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvIdiomas_PageIndexChanging" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdIdioma"
         OnRowDataBound="gvIdiomas_RowDataBound" OnRowCommand="gvIdiomas_RowCommand"
         data-i18n-headers="idiomas.col.codigo,idiomas.col.nombre,idiomas.col.estado,idiomas.col.progreso,idiomas.col.acciones">
         <Columns>
@@ -51,7 +57,13 @@
             <asp:Button ID="btnFiltrar" runat="server" Text="Filtrar" data-i18n="idiomas.btn.filtrar" OnClick="btnFiltrar_Click" CssClass="btn-grid" />
         </div>
 
-        <asp:GridView ID="gvEtiquetas" runat="server" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdEtiqueta"
+        <div class="filter-row">
+        <asp:Label runat="server" AssociatedControlID="txtFiltrogvEtiquetas" Text="Buscar en la tabla" data-i18n="grillas.buscar" />
+        <asp:TextBox ID="txtFiltrogvEtiquetas" runat="server" MaxLength="150" />
+        <asp:Button runat="server" Text="Filtrar" data-i18n="grillas.filtrar" OnClick="FiltrargvEtiquetas" CommandArgument="aplicar" CausesValidation="false" CssClass="btn-grid" />
+        <asp:Button runat="server" Text="Limpiar" data-i18n="grillas.limpiar" OnClick="FiltrargvEtiquetas" CommandArgument="limpiar" CausesValidation="false" CssClass="btn-grid" />
+    </div>
+    <asp:GridView ID="gvEtiquetas" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvEtiquetas_PageIndexChanging" CssClass="grid" AutoGenerateColumns="false" DataKeyNames="IdEtiqueta"
             data-i18n-headers="idiomas.col.pantalla,idiomas.col.clave,idiomas.col.textoBase,idiomas.col.traduccion">
             <Columns>
                 <asp:BoundField DataField="Pantalla" HeaderText="Pantalla" />

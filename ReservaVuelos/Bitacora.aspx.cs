@@ -1,4 +1,4 @@
-using ReservaVuelos.BLL;
+﻿using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
 using System.Collections.Generic;
@@ -6,8 +6,10 @@ using System.Web.UI.WebControls;
 
 namespace ReservaVuelos
 {
-    public partial class Bitacora : System.Web.UI.Page
+    public partial class Bitacora : BasePage
     {
+        protected override string ClaveTitulo { get { return "ui.bitacora.001"; } }
+
         private BitacoraBLL _bBLL = new BitacoraBLL();
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -71,5 +73,15 @@ namespace ReservaVuelos
             gvBitacora.PageIndex = 0;
             LoadGrid();
         }
+        public override void ActualizarIdioma(ReservaVuelos.BE.Idioma idioma)
+        {
+            base.ActualizarIdioma(idioma);
+            foreach (GridViewRow fila in gvBitacora.Rows)
+            {
+                string valor = Convert.ToString(gvBitacora.DataKeys[fila.RowIndex].Value);
+                fila.Cells[3].Text = Traductor.TraducirOConservar("ui.bitacora.criticidad." + valor, idioma, valor);
+            }
+        }
+
     }
 }

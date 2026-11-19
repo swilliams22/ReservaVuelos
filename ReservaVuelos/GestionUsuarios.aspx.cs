@@ -38,7 +38,8 @@ namespace ReservaVuelos
         private void CargarUsuarios()
         {
             _perfiles = new PerfilBLL().ListarPerfiles();
-            gvUsuarios.DataSource = _bll.Listar();
+            gvUsuarios.DataSource = FiltrarGrilla(_bll.Listar(), FiltrogvUsuarios, v => v.Nombre + " " + v.Email + " " + v.Rol + " " + T(v.Activo ? "usuarios.estado.activo" : "usuarios.estado.inactivo"));
+            gvUsuarios.PageIndex = Math.Min(gvUsuarios.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvUsuarios.DataSource).Count - 1) / gvUsuarios.PageSize);
             gvUsuarios.DataBind();
         }
 
@@ -96,14 +97,29 @@ namespace ReservaVuelos
             catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException)
             {
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = ex.Message;
+                lblMsg.Text = ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
             catch (Exception ex)
             {
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = T("usuarios.msg.error") + ": " + ex.Message;
+                lblMsg.Text = T("usuarios.msg.error") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
             CargarUsuarios();
         }
+        protected void gvUsuarios_PageIndexChanging(object sender, GridViewPageEventArgs e)
+        {
+            gvUsuarios.PageIndex = e.NewPageIndex;
+            CargarUsuarios();
+        }
+
+        private string FiltrogvUsuarios { get { return ViewState["FiltrogvUsuarios"] as string ?? ""; } set { ViewState["FiltrogvUsuarios"] = value; } }
+        protected void FiltrargvUsuarios(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvUsuarios.Text = "";
+            FiltrogvUsuarios = txtFiltrogvUsuarios.Text.Trim();
+            gvUsuarios.PageIndex = 0;
+            CargarUsuarios();
+        }
+
     }
 }

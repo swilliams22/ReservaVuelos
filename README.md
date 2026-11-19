@@ -1,4 +1,4 @@
-# ReservaVuelos
+﻿# ReservaVuelos
 
 Aplicación ASP.NET Web Forms sobre .NET Framework 4.7.2 para búsqueda de vuelos, gestión de reservas y administración básica.
 
@@ -192,3 +192,25 @@ SOAP, pertenencia de reservas y ciclos SQL; la elimina al finalizar.
 Para agregar una página: declararla en `PoliticaPaginas`, definir sus hojas en
 `Permisos` y en SQL, exigir el permiso antes de cada acción sensible y actualizar
 las pruebas de la matriz de acceso. El menú por sí solo no concede acceso.
+
+### Cobertura de idiomas y actualización
+
+Administración de vuelos, XML, backups, bitácora, integridad, registro y páginas informativas usan Observer y el catálogo SQL, incluyendo títulos, columnas, filtros y confirmaciones. Los mensajes conocidos de validación BLL/SOAP se traducen al presentarlos; los diagnósticos técnicos externos y el contenido histórico de la bitácora se conservan en su idioma original.
+
+`ReservaVuelos/SQL/MigracionIdiomasCompletar.sql` carga las etiquetas faltantes sin sobrescribir traducciones existentes. La misma migración está incluida en `base/ActualizarBD_2026-10-15.sql` y en el esquema de instalación `ReservaVuelos/SQL/ReservaVuelos.sql`. Mantener los tres sincronizados al agregar etiquetas. El script de instalación recrea la base; para actualizar usar la migración o el script de `base`.
+
+Después de compilar y aplicar la migración, ejecutar `tests/Test-Idiomas.ps1` (opcionalmente `-Servidor`). Verifica español/inglés, validaciones con parámetros, confirmaciones y que los valores de los filtros no cambien al traducirlos. La caché se renueva hasta dos minutos después de cambios SQL externos; reiniciar la aplicación los aplica inmediatamente.
+
+### Filtros, paginación e integridad ampliada
+
+Los 13 GridView tienen paginación de 20 filas y filtros. Las búsquedas adicionales filtran por texto en los campos de cada tabla; se aplican con Filtrar y se restablecen con Limpiar. La página vuelve al inicio al aplicar un filtro y se ajusta si el resultado se reduce. Los filtros no alteran los pasajeros o vuelos que componen una reserva; las ediciones de traducciones se conservan al cambiar de página.
+
+La integridad cubre 15 tablas: las ocho originales más Idioma, Etiqueta, Traduccion, Permisos, PermisoRelacion, ConfiguracionSistema e IntegridadError. Las claves compuestas se conservan y sus referencias usan `IdIdioma:IdEtiqueta` o `IdPadre:IdHijo`. IntegridadDVV e IntegridadRegistro son las dos tablas de referencia del mecanismo, no se incluyen en su propio cálculo para evitar autorreferencia; sus valores se contrastan con los datos durante la validación.
+
+Las mutaciones de idiomas y perfiles validan y bloquean las tablas antes de modificarlas y actualizan DVH, DVV y referencias en la misma transacción. No se usan triggers que legitimen cualquier edición SQL. Los cambios manuales se detectan al validar integridad; después de una corrección revisada, WebMaster puede recalcular desde Gestión de Integridad.
+
+Aplicar `ReservaVuelos/SQL/MigracionGrillasIntegridad.sql` sobre una base existente. Está incluida también en el script general de actualización y el de instalación. La migración inicializa sólo tablas nuevas, no sustituye referencias de tablas ya protegidas. Una instalación nueva inicializa sus referencias al primer arranque. Ejecutar `tests/Test-IntegridadAmpliada.ps1` para comprobar cálculos C#/SQL, altas/bajas autorizadas y detección de manipulación en una base temporal.
+
+### Cifrado automático TDE
+
+Para dejar `ReservaVuelosDB` cifrada con AES-256, ejecutar `.\base\Activar-Cifrado.ps1` desde la raíz del proyecto (requiere una edición compatible y permisos de administración en SQL Server). Genera y protege las credenciales, respalda el certificado y su clave privada y espera hasta el estado 3 de cifrado completo. Puede repetirse sin recrear datos. La configuración y recuperación están documentadas en `base/README.md`; los secretos locales de `base/local/` están excluidos de Git.

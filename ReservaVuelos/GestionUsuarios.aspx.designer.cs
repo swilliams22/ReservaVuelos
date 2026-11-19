@@ -10,5 +10,7 @@ namespace ReservaVuelos
     {
         protected global::System.Web.UI.WebControls.Label lblMsg;
         protected global::System.Web.UI.WebControls.GridView gvUsuarios;
+        protected global::System.Web.UI.WebControls.TextBox txtFiltrogvUsuarios;
+
     }
 }

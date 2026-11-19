@@ -1,12 +1,14 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
 
 namespace ReservaVuelos
 {
-    public partial class Logout : System.Web.UI.Page
+    public partial class Logout : BasePage
     {
+        protected override string ClaveTitulo { get { return "ui.logout.001"; } }
+
         private BitacoraBLL _bBLL = new BitacoraBLL();
         protected void Page_Load(object sender, EventArgs e)
         {

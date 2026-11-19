@@ -95,6 +95,8 @@ namespace ReservaVuelos
             // Si no se cargan filtros, Search devuelve todos los vuelos activos.
             List<Vuelo> listaIda = _vBLL.Search(origen, destino, fechaIda, "Activos");
             listaIda = listaIda.FindAll(v => v.CuposDisponibles >= cantidadPasajeros.Value);
+            ViewState["Resultados_gvVuelos"] = listaIda.ConvertAll(v => v.IdVuelo).ToArray();
+            gvVuelos.PageIndex = 0;
             gvVuelos.DataSource = listaIda;
             gvVuelos.DataBind();
 
@@ -117,7 +119,9 @@ namespace ReservaVuelos
 
                 gvVuelosReturn.Visible = true;
                 lblVueltaTitle.Visible = true;
-                gvVuelosReturn.DataSource = listaVuelta;
+                ViewState["Resultados_gvVuelosReturn"] = listaVuelta.ConvertAll(v => v.IdVuelo).ToArray();
+            gvVuelosReturn.PageIndex = 0;
+            gvVuelosReturn.DataSource = listaVuelta;
                 gvVuelosReturn.DataBind();
 
                 if (listaVuelta.Count == 0)
@@ -125,6 +129,8 @@ namespace ReservaVuelos
             }
             else
             {
+                ViewState.Remove("Resultados_gvVuelosReturn");
+                gvVuelosReturn.PageIndex = 0;
                 gvVuelosReturn.DataSource = null;
                 gvVuelosReturn.DataBind();
                 gvVuelosReturn.Visible = false;
@@ -197,7 +203,9 @@ namespace ReservaVuelos
 
                 gvVuelosReturn.Visible = true;
                 lblVueltaTitle.Visible = true;
-                gvVuelosReturn.DataSource = vuelosVuelta;
+                ViewState["Resultados_gvVuelosReturn"] = vuelosVuelta.ConvertAll(v => v.IdVuelo).ToArray();
+            gvVuelosReturn.PageIndex = 0;
+            gvVuelosReturn.DataSource = vuelosVuelta;
                 gvVuelosReturn.DataBind();
 
                 lblMsg.ForeColor = System.Drawing.Color.Red;
@@ -205,6 +213,32 @@ namespace ReservaVuelos
                     ? T("buscar.msg.sinVuelosVuelta")
                     : "";
             }
+        }
+
+        protected void gvVuelos_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            gvVuelos.PageIndex = e.NewPageIndex;
+            CargarPaginaBusqueda(gvVuelos);
+        }
+
+        protected void gvVuelosReturn_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            gvVuelosReturn.PageIndex = e.NewPageIndex;
+            CargarPaginaBusqueda(gvVuelosReturn);
+        }
+
+        private void CargarPaginaBusqueda(GridView grid)
+        {
+            int[] ids = ViewState["Resultados_" + grid.ID] as int[] ?? new int[0];
+            var vuelos = new List<Vuelo>();
+            foreach (int id in ids)
+            {
+                Vuelo vuelo = _vBLL.GetById(id);
+                if (vuelo != null) vuelos.Add(vuelo);
+            }
+            grid.PageIndex = Math.Min(grid.PageIndex, Math.Max(0, vuelos.Count - 1) / grid.PageSize);
+            grid.DataSource = vuelos;
+            grid.DataBind();
         }
 
     }

@@ -22,5 +22,8 @@ namespace ReservaVuelos
         protected global::System.Web.UI.WebControls.GridView gvEtiquetas;
         protected global::System.Web.UI.WebControls.Button btnGuardar;
         protected global::System.Web.UI.WebControls.Button btnCerrar;
+        protected global::System.Web.UI.WebControls.TextBox txtFiltrogvIdiomas;
+        protected global::System.Web.UI.WebControls.TextBox txtFiltrogvEtiquetas;
+
     }
 }

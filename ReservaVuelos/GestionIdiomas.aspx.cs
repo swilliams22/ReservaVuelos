@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.BLL;
 using ReservaVuelos.Servicios;
 using System;
@@ -37,7 +37,8 @@ namespace ReservaVuelos
 
         private void CargarIdiomas()
         {
-            gvIdiomas.DataSource = _bll.GetTodos();
+            gvIdiomas.DataSource = FiltrarGrilla(_bll.GetTodos(), FiltrogvIdiomas, v => v.Codigo + " " + v.Nombre + " " + T(v.Activo ? "usuarios.estado.activo" : "usuarios.estado.inactivo"));
+            gvIdiomas.PageIndex = Math.Min(gvIdiomas.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvIdiomas.DataSource).Count - 1) / gvIdiomas.PageSize);
             gvIdiomas.DataBind();
         }
 
@@ -70,6 +71,7 @@ namespace ReservaVuelos
 
         protected void gvIdiomas_RowCommand(object sender, GridViewCommandEventArgs e)
         {
+            if (e.CommandName == "Page") return;
             AutorizacionService.Exigir(Permisos.EditarIdiomas);
             int idIdioma;
             if (!int.TryParse(Convert.ToString(e.CommandArgument), out idIdioma)) return;
@@ -104,7 +106,7 @@ namespace ReservaVuelos
             catch (Exception ex)
             {
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = T("idiomas.msg.error") + ": " + ex.Message;
+                lblMsg.Text = T("idiomas.msg.error") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
             CargarIdiomas();
         }
@@ -133,7 +135,7 @@ namespace ReservaVuelos
             catch (Exception ex)
             {
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = T("idiomas.msg.error") + ": " + ex.Message;
+                lblMsg.Text = T("idiomas.msg.error") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
         }
 
@@ -141,6 +143,10 @@ namespace ReservaVuelos
 
         private void AbrirEdicion(Idioma idioma)
         {
+            ViewState.Remove("TraduccionesPendientes");
+            FiltrogvEtiquetas = "";
+            txtFiltrogvEtiquetas.Text = "";
+            gvEtiquetas.PageIndex = 0;
             hfIdIdioma.Value = idioma.IdIdioma.ToString();
             lblIdiomaEditado.Text = idioma.Nombre + " (" + idioma.Codigo + ")";
 
@@ -166,12 +172,23 @@ namespace ReservaVuelos
             Idioma idioma = IdiomaEnEdicion();
             if (idioma == null) { pnlEditar.Visible = false; return; }
 
-            gvEtiquetas.DataSource = _bll.GetEtiquetas(idioma, ddlPantalla.SelectedValue, chkPendientes.Checked);
+            gvEtiquetas.DataSource = FiltrarGrilla(_bll.GetEtiquetas(idioma, ddlPantalla.SelectedValue, chkPendientes.Checked), FiltrogvEtiquetas, v => v.Clave + " " + v.TextoBase + " " + v.Texto);
+            gvEtiquetas.PageIndex = Math.Min(gvEtiquetas.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvEtiquetas.DataSource).Count - 1) / gvEtiquetas.PageSize);
             gvEtiquetas.DataBind();
+            var pendientes = ViewState["TraduccionesPendientes"] as Dictionary<int, string>;
+            if (pendientes != null)
+                foreach (GridViewRow fila in gvEtiquetas.Rows)
+                {
+                    string texto;
+                    if (pendientes.TryGetValue(Convert.ToInt32(gvEtiquetas.DataKeys[fila.RowIndex].Value), out texto))
+                        ((TextBox)fila.FindControl("txtTexto")).Text = texto;
+                }
         }
 
         protected void btnFiltrar_Click(object sender, EventArgs e)
         {
+            CapturarTraducciones();
+            gvEtiquetas.PageIndex = 0;
             lblMsg.Text = "";
             CargarEtiquetas();
         }
@@ -183,23 +200,20 @@ namespace ReservaVuelos
             Idioma idioma = IdiomaEnEdicion();
             if (idioma == null) return;
 
-            Dictionary<int, string> textos = new Dictionary<int, string>();
-            foreach (GridViewRow fila in gvEtiquetas.Rows)
-            {
-                TextBox txt = (TextBox)fila.FindControl("txtTexto");
-                textos[Convert.ToInt32(gvEtiquetas.DataKeys[fila.RowIndex].Value)] = txt.Text;
-            }
+            CapturarTraducciones();
+            Dictionary<int, string> textos = (Dictionary<int, string>)ViewState["TraduccionesPendientes"];
 
             try
             {
                 _bll.GuardarTraducciones(idioma, textos);
+                ViewState.Remove("TraduccionesPendientes");
                 Registrar("Traducciones guardadas del idioma " + idioma.Codigo, 1);
                 Mensaje("idiomas.msg.guardado", false);
             }
             catch (Exception ex)
             {
                 lblMsg.ForeColor = System.Drawing.Color.Red;
-                lblMsg.Text = T("idiomas.msg.error") + ": " + ex.Message;
+                lblMsg.Text = T("idiomas.msg.error") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
             CargarEtiquetas();
             CargarIdiomas();
@@ -238,5 +252,49 @@ namespace ReservaVuelos
                 // La bitácora no debe impedir la operación.
             }
         }
+        protected void gvIdiomas_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            gvIdiomas.PageIndex = e.NewPageIndex;
+            CargarIdiomas();
+        }
+
+        protected void gvEtiquetas_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            CapturarTraducciones();
+            gvEtiquetas.PageIndex = e.NewPageIndex;
+            CargarEtiquetas();
+        }
+
+        private void CapturarTraducciones()
+        {
+            Dictionary<int, string> textos = ViewState["TraduccionesPendientes"] as Dictionary<int, string> ?? new Dictionary<int, string>();
+            foreach (GridViewRow fila in gvEtiquetas.Rows)
+            {
+                TextBox txt = (TextBox)fila.FindControl("txtTexto");
+                textos[Convert.ToInt32(gvEtiquetas.DataKeys[fila.RowIndex].Value)] = txt.Text;
+            }
+
+            ViewState["TraduccionesPendientes"] = textos;
+        }
+
+        private string FiltrogvIdiomas { get { return ViewState["FiltrogvIdiomas"] as string ?? ""; } set { ViewState["FiltrogvIdiomas"] = value; } }
+        protected void FiltrargvIdiomas(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvIdiomas.Text = "";
+            FiltrogvIdiomas = txtFiltrogvIdiomas.Text.Trim();
+            gvIdiomas.PageIndex = 0;
+            CargarIdiomas();
+        }
+
+        private string FiltrogvEtiquetas { get { return ViewState["FiltrogvEtiquetas"] as string ?? ""; } set { ViewState["FiltrogvEtiquetas"] = value; } }
+        protected void FiltrargvEtiquetas(object sender, EventArgs e)
+        {
+            CapturarTraducciones();
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvEtiquetas.Text = "";
+            FiltrogvEtiquetas = txtFiltrogvEtiquetas.Text.Trim();
+            gvEtiquetas.PageIndex = 0;
+            CargarEtiquetas();
+        }
+
     }
 }

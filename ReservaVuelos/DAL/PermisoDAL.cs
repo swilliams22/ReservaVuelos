@@ -1,4 +1,5 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
+using ReservaVuelos.Servicios;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -105,25 +106,44 @@ SELECT DISTINCT IdPadre FROM Ancestros OPTION (MAXRECURSION 100);", cn))
 
         public int CrearGrupo(string codigo)
         {
-            using (SqlConnection cn = ConexionDAL.GetConnection())
-            using (SqlCommand cmd = new SqlCommand("INSERT INTO dbo.Permisos (Codigo, EsGrupo) VALUES (@Codigo, 1); SELECT CAST(SCOPE_IDENTITY() AS INT);", cn))
+            using (var cn = ConexionDAL.GetConnection())
             {
-                cmd.Parameters.AddWithValue("@Codigo", codigo);
                 cn.Open();
-                return Convert.ToInt32(cmd.ExecuteScalar());
+                using (var tx = cn.BeginTransaction(IsolationLevel.Serializable))
+                {
+                    var integrity = new IntegrityService();
+                    integrity.BeforeChange(cn, tx, "Permisos");
+                    int id;
+                    using (var cmd = new SqlCommand("INSERT INTO dbo.Permisos (Codigo, EsGrupo) VALUES (@Codigo, 1); SELECT CAST(SCOPE_IDENTITY() AS INT);", cn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@Codigo", codigo);
+                        id = Convert.ToInt32(cmd.ExecuteScalar());
+                    }
+                    integrity.AfterChange(cn, tx, "Permisos");
+                    tx.Commit();
+                    return id;
+                }
             }
         }
 
-        // Los triggers rechazan ciclos (50002) y que un permiso simple tenga hijos (50001).
         public void AgregarHijo(int idPadre, int idHijo)
         {
-            using (SqlConnection cn = ConexionDAL.GetConnection())
-            using (SqlCommand cmd = new SqlCommand("INSERT INTO dbo.PermisoRelacion (IdPadre, IdHijo) VALUES (@Padre, @Hijo);", cn))
+            using (var cn = ConexionDAL.GetConnection())
             {
-                cmd.Parameters.AddWithValue("@Padre", idPadre);
-                cmd.Parameters.AddWithValue("@Hijo", idHijo);
                 cn.Open();
-                cmd.ExecuteNonQuery();
+                using (var tx = cn.BeginTransaction(IsolationLevel.Serializable))
+                {
+                    var integrity = new IntegrityService();
+                    integrity.BeforeChange(cn, tx, "Permisos", "PermisoRelacion");
+                    using (var cmd = new SqlCommand("INSERT INTO dbo.PermisoRelacion (IdPadre, IdHijo) VALUES (@Padre, @Hijo);", cn, tx))
+                    {
+                        cmd.Parameters.AddWithValue("@Padre", idPadre);
+                        cmd.Parameters.AddWithValue("@Hijo", idHijo);
+                        cmd.ExecuteNonQuery();
+                    }
+                    integrity.AfterChange(cn, tx, "PermisoRelacion");
+                    tx.Commit();
+                }
             }
         }
 
@@ -167,6 +187,8 @@ DELETE FROM dbo.Permisos WHERE IdPermiso = @Id AND EsGrupo = 1;", cn, tran))
                 {
                     try
                     {
+                        var integrity = new IntegrityService();
+                        integrity.BeforeChange(cn, tran, "Permisos", "PermisoRelacion");
                         cambio(cn, tran);
                         if (permisosAConservar != null && permisosAConservar.Length > 0 &&
                             !UsuarioTienePermisos(cn, tran, idEditor, permisosAConservar))
@@ -174,6 +196,7 @@ DELETE FROM dbo.Permisos WHERE IdPermiso = @Id AND EsGrupo = 1;", cn, tran))
                             tran.Rollback();
                             return false;
                         }
+                        integrity.AfterChange(cn, tran, "Permisos", "PermisoRelacion");
                         tran.Commit();
                         return true;
                     }

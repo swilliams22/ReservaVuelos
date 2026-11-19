@@ -1,6 +1,8 @@
 ﻿using ReservaVuelos.BE;
 using ReservaVuelos.Servicios;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Web;
 using System.Web.UI;
 
@@ -64,5 +66,11 @@ namespace ReservaVuelos
         {
             return HttpUtility.JavaScriptStringEncode(Traductor.T(clave));
         }
+        protected static List<TItem> FiltrarGrilla<TItem>(IEnumerable<TItem> filas, string filtro, Func<TItem, string> texto)
+        {
+            return filas.Where(f => string.IsNullOrWhiteSpace(filtro) ||
+                (texto(f) ?? "").IndexOf(filtro, StringComparison.CurrentCultureIgnoreCase) >= 0).ToList();
+        }
+
     }
 }

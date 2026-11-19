@@ -90,7 +90,7 @@ namespace ReservaVuelos
 
         private void CargarVuelos()
         {
-            gvVuelosSeleccionados.DataSource = VuelosSeleccionados.Select(v => new
+            gvVuelosSeleccionados.DataSource = FiltrarGrilla(VuelosSeleccionados, FiltrogvVuelosSeleccionados, v => v.Origen + " " + v.Destino + " " + v.FechaSalida.ToString("yyyy-MM-dd")).Select(v => new
             {
                 v.Origen,
                 v.Destino,
@@ -98,12 +98,14 @@ namespace ReservaVuelos
                 v.HoraSalida,
                 Precio = v.Precio.ToString("C")
             }).ToList();
+            gvVuelosSeleccionados.PageIndex = Math.Min(gvVuelosSeleccionados.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvVuelosSeleccionados.DataSource).Count - 1) / gvVuelosSeleccionados.PageSize);
             gvVuelosSeleccionados.DataBind();
         }
 
         private void CargarPasajeros()
         {
-            gvPasajeros.DataSource = PasajerosTemporal;
+            gvPasajeros.DataSource = FiltrarGrilla(PasajerosTemporal, FiltrogvPasajeros, v => v.Nombre + " " + v.Apellido + " " + v.Documento);
+            gvPasajeros.PageIndex = Math.Min(gvPasajeros.PageIndex, Math.Max(0, ((System.Collections.ICollection)gvPasajeros.DataSource).Count - 1) / gvPasajeros.PageSize);
             gvPasajeros.DataBind();
             lblCantidadActualPasajeros.Text = string.Format(T("detallereserva.fmt.cantidadDe"), PasajerosTemporal.Count, CantidadPasajerosDeclarada);
         }
@@ -119,7 +121,7 @@ namespace ReservaVuelos
                 ids.AddRange(VuelosSeleccionados.Select(v => v.IdVuelo));
                 ReservaVuelos.AeroLinkServiceReference.CalculoReserva calculo = AeroLinkCliente.Llamar(c => c.CalcularPrecioReserva(ids, cantidad));
                 if (!calculo.Valido)
-                    throw new InvalidOperationException(calculo.Mensaje);
+                    throw new InvalidOperationException(ReservaVuelos.Servicios.Traductor.Mensaje(calculo.Mensaje));
                 total = calculo.Total;
             }
             catch (Exception)
@@ -288,7 +290,7 @@ namespace ReservaVuelos
             catch (Exception ex)
             {
                 if (new IntegrityService().RedirectIfContingencyActive(SesionService.GetUser())) return;
-                lblMsg.Text = T("detallereserva.msg.errorCrear") + ": " + ex.Message;
+                lblMsg.Text = T("detallereserva.msg.errorCrear") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
         }
 
@@ -299,5 +301,35 @@ namespace ReservaVuelos
             Session.Remove("CantidadPasajerosDeclarada");
             Response.Redirect("BuscarVuelos.aspx");
         }
+        protected void gvVuelosSeleccionados_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            gvVuelosSeleccionados.PageIndex = e.NewPageIndex;
+            CargarVuelos();
+        }
+
+        protected void gvPasajeros_PageIndexChanging(object sender, System.Web.UI.WebControls.GridViewPageEventArgs e)
+        {
+            gvPasajeros.PageIndex = e.NewPageIndex;
+            CargarPasajeros();
+        }
+
+        private string FiltrogvPasajeros { get { return ViewState["FiltrogvPasajeros"] as string ?? ""; } set { ViewState["FiltrogvPasajeros"] = value; } }
+        protected void FiltrargvPasajeros(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvPasajeros.Text = "";
+            FiltrogvPasajeros = txtFiltrogvPasajeros.Text.Trim();
+            gvPasajeros.PageIndex = 0;
+            CargarPasajeros();
+        }
+
+        private string FiltrogvVuelosSeleccionados { get { return ViewState["FiltrogvVuelosSeleccionados"] as string ?? ""; } set { ViewState["FiltrogvVuelosSeleccionados"] = value; } }
+        protected void FiltrargvVuelosSeleccionados(object sender, EventArgs e)
+        {
+            if (((System.Web.UI.WebControls.Button)sender).CommandArgument == "limpiar") txtFiltrogvVuelosSeleccionados.Text = "";
+            FiltrogvVuelosSeleccionados = txtFiltrogvVuelosSeleccionados.Text.Trim();
+            gvVuelosSeleccionados.PageIndex = 0;
+            CargarVuelos();
+        }
+
     }
 }

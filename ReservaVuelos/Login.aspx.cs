@@ -56,14 +56,14 @@ namespace ReservaVuelos
                 {
                     IntegrityService integrity = new IntegrityService();
                     if (integrity.RedirectIfContingencyActive(SesionService.GetUser())) return;
-                    lblMsg.Text = T("login.msg.errorIniciarSesion") + ": " + resultado.Mensaje;
+                    lblMsg.Text = T("login.msg.errorIniciarSesion") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(resultado.Mensaje);
                 }
             }
             catch (Exception ex)
             {
                 IntegrityService integrity = new IntegrityService();
                 if (integrity.RedirectIfContingencyActive(SesionService.GetUser())) return;
-                lblMsg.Text = T("login.msg.errorIniciarSesion") + ": " + ex.Message;
+                lblMsg.Text = T("login.msg.errorIniciarSesion") + ": " + ReservaVuelos.Servicios.Traductor.Mensaje(ex.Message);
             }
         }
     }

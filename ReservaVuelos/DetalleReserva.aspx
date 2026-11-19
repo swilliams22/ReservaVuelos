@@ -1,11 +1,17 @@
-<%@ Page Title="Detalle de Reserva" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DetalleReserva.aspx.cs" Inherits="ReservaVuelos.DetalleReserva" %>
+﻿<%@ Page Title="Detalle de Reserva" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="DetalleReserva.aspx.cs" Inherits="ReservaVuelos.DetalleReserva" %>
 <asp:Content ID="MainContent" ContentPlaceHolderID="MainContent" runat="server">
     <h2 runat="server" data-i18n="detallereserva.titulo">Confirmar Reserva</h2>
     <asp:Label ID="lblMsg" runat="server" ForeColor="Red"></asp:Label>
 
     <div class="reservation-section">
         <h3 runat="server" data-i18n="detallereserva.sec.vuelos">Vuelos seleccionados</h3>
-        <asp:GridView ID="gvVuelosSeleccionados" runat="server" CssClass="grid" AutoGenerateColumns="false" data-i18n-headers="buscar.col.origen,buscar.col.destino,buscar.col.fecha,buscar.col.hora,buscar.col.precio">
+        <div class="filter-row">
+        <asp:Label runat="server" AssociatedControlID="txtFiltrogvVuelosSeleccionados" Text="Buscar en la tabla" data-i18n="grillas.buscar" />
+        <asp:TextBox ID="txtFiltrogvVuelosSeleccionados" runat="server" MaxLength="150" />
+        <asp:Button runat="server" Text="Filtrar" data-i18n="grillas.filtrar" OnClick="FiltrargvVuelosSeleccionados" CommandArgument="aplicar" CausesValidation="false" CssClass="btn-grid" />
+        <asp:Button runat="server" Text="Limpiar" data-i18n="grillas.limpiar" OnClick="FiltrargvVuelosSeleccionados" CommandArgument="limpiar" CausesValidation="false" CssClass="btn-grid" />
+    </div>
+    <asp:GridView ID="gvVuelosSeleccionados" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvVuelosSeleccionados_PageIndexChanging" CssClass="grid" AutoGenerateColumns="false" data-i18n-headers="buscar.col.origen,buscar.col.destino,buscar.col.fecha,buscar.col.hora,buscar.col.precio">
             <Columns>
                 <asp:BoundField DataField="Origen" HeaderText="Origen" />
                 <asp:BoundField DataField="Destino" HeaderText="Destino" />
@@ -33,7 +39,13 @@
             <span runat="server" data-i18n="detallereserva.txt.cantidadExacta">Debe cargar exactamente esa cantidad para confirmar la reserva.</span>
         </p>
 
-        <asp:GridView ID="gvPasajeros" runat="server" CssClass="grid" AutoGenerateColumns="false" 
+        <div class="filter-row">
+        <asp:Label runat="server" AssociatedControlID="txtFiltrogvPasajeros" Text="Buscar en la tabla" data-i18n="grillas.buscar" />
+        <asp:TextBox ID="txtFiltrogvPasajeros" runat="server" MaxLength="150" />
+        <asp:Button runat="server" Text="Filtrar" data-i18n="grillas.filtrar" OnClick="FiltrargvPasajeros" CommandArgument="aplicar" CausesValidation="false" CssClass="btn-grid" />
+        <asp:Button runat="server" Text="Limpiar" data-i18n="grillas.limpiar" OnClick="FiltrargvPasajeros" CommandArgument="limpiar" CausesValidation="false" CssClass="btn-grid" />
+    </div>
+    <asp:GridView ID="gvPasajeros" runat="server" AllowPaging="true" PageSize="20" OnPageIndexChanging="gvPasajeros_PageIndexChanging" CssClass="grid" AutoGenerateColumns="false"
             OnRowCommand="gvPasajeros_RowCommand" DataKeyNames="Documento" data-i18n-headers="detallereserva.col.nombre,detallereserva.col.documento,detallereserva.col.email,detallereserva.col.nacionalidad,">
             <Columns>
                 <asp:BoundField DataField="NombreCompleto" HeaderText="Nombre" />
