@@ -43,6 +43,19 @@ class AutorizacionTests
                     using(var cmd=new SqlCommand(lote,cn)) cmd.ExecuteNonQuery();
         }
     }
+    // Estos cambios representan acciones autorizadas del fixture, no manipulación SQL.
+    static void RefrescarUsuario(int id)
+    {
+        using(var cn=ConexionDAL.GetConnection()) { cn.Open(); using(var tx=cn.BeginTransaction()) {
+            new IntegrityService().UpdateRecordAndTableDVV(cn,tx,"Usuarios",id); tx.Commit();
+        } }
+    }
+    static void RefrescarRelaciones()
+    {
+        using(var cn=ConexionDAL.GetConnection()) { cn.Open(); using(var tx=cn.BeginTransaction()) {
+            new IntegrityService().AfterChange(cn,tx,"PermisoRelacion"); tx.Commit();
+        } }
+    }
     static Usuario Crear(string rol)
     {
         string hash, salt;
@@ -92,6 +105,7 @@ class AutorizacionTests
         Verificar(Convert.ToInt32(Sql("SELECT COUNT(*) FROM Usuarios"))==cuentasAntes,"Reejecución de actualización no cambia cuentas");
         Verificar(!new PermisoDAL().ObtenerPorRol("Administrador").TienePermiso(Permisos.CrearVuelo),"Reejecución no repone permisos revocados");
         Sql("INSERT PermisoRelacion(IdPadre,IdHijo) SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'");
+        RefrescarRelaciones();
 
         var usuario=Crear("Usuario"); var admin=Crear("Administrador"); var wm=Crear("WebMaster");
         // Regresión: el selector propone Córdoba y el seed guarda Cordoba.
@@ -129,6 +143,7 @@ class AutorizacionTests
         Verificar(!PoliticaPaginas.IntentarObtener("~/Nueva.aspx",out ignorado),"Página nueva denegada por defecto");
         Verificar(!PoliticaPaginas.IntentarObtener("~/otra/AdminVuelos.aspx",out ignorado),"Una subcarpeta no hereda políticas por nombre");
 
+        new IntegrityService().RecalculateAll(null,"Preparacion de cambios autorizados del fixture");
         Gate(usuario,"MisReservas.aspx"); Verificar(true,"Usuario accede a sus reservas");
         Gate(admin,"AdminVuelos.aspx"); Verificar(true,"Administrador accede por URL directa");
         Gate(wm,"GestionIntegridad.aspx"); Verificar(true,"WebMaster accede a integridad");
@@ -139,15 +154,19 @@ class AutorizacionTests
         Contexto(usuario,"MisReservas.aspx");
         Rechaza(()=>AutorizacionService.Exigir(Permisos.CrearVuelo),"Acción forzada sin permiso bloqueada");
         Sql("UPDATE Usuarios SET Rol='Usuario' WHERE IdUsuario="+admin.IdUsuario);
+        RefrescarUsuario(admin.IdUsuario);
         Rechaza(()=>Gate(admin,"AdminVuelos.aspx"),"Cambio de rol invalida acceso de sesión abierta");
         Sql("UPDATE Usuarios SET Rol='Administrador' WHERE IdUsuario="+admin.IdUsuario);
+        RefrescarUsuario(admin.IdUsuario);
 
         // Cambiar permisos de un grupo no exige cerrar sesión; tampoco borra el permiso de lectura.
         string bajaRelacion="DELETE r FROM PermisoRelacion r JOIN Permisos p ON p.IdPermiso=r.IdPadre JOIN Permisos h ON h.IdPermiso=r.IdHijo WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'";
         Sql(bajaRelacion);
+        RefrescarRelaciones();
         Gate(admin,"AdminVuelos.aspx");
         Rechaza(()=>AutorizacionService.Exigir(Permisos.CrearVuelo),"Permiso de acción revocado con sesión abierta");
         Sql("INSERT PermisoRelacion(IdPadre,IdHijo) SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='GestionVuelos' AND h.Codigo='Vuelos.Crear'");
+        RefrescarRelaciones();
 
         try { Sql("INSERT PermisoRelacion(IdPadre,IdHijo) SELECT p.IdPermiso,h.IdPermiso FROM Permisos p CROSS JOIN Permisos h WHERE p.Codigo='OperacionesUsuario' AND h.Codigo='Usuario'"); throw new Exception("SQL aceptó ciclo"); }
         catch (SqlException ex) { Verificar(ex.Number==50002,"SQL impide ciclos de grupos"); }
@@ -166,13 +185,17 @@ class AutorizacionTests
         Verificar(!string.IsNullOrEmpty(token),"SOAP entrega token autenticado");
         ws.ObtenerInformeVuelosXml(token,"Todos"); Verificar(true,"SOAP permite exportar a Administrador");
         Sql("UPDATE Usuarios SET Rol='Usuario' WHERE IdUsuario="+admin.IdUsuario);
+        RefrescarUsuario(admin.IdUsuario);
         try { ws.ObtenerInformeVuelosXml(token,"Todos"); throw new Exception("Token conservó privilegios"); }
         catch (SoapException) { Verificar(true,"SOAP vuelve a consultar rol con token existente"); }
         Sql("UPDATE Usuarios SET Rol='Administrador' WHERE IdUsuario="+admin.IdUsuario);
+        RefrescarUsuario(admin.IdUsuario);
         Sql("UPDATE Usuarios SET Activo=0 WHERE IdUsuario="+admin.IdUsuario);
+        RefrescarUsuario(admin.IdUsuario);
         try { ws.ObtenerInformeVuelosXml(token,"Todos"); throw new Exception("Token de inactivo aceptado"); }
         catch (SoapException) { Verificar(true,"SOAP rechaza cuenta desactivada"); }
         Sql("UPDATE Usuarios SET Activo=1 WHERE IdUsuario="+admin.IdUsuario);
+        RefrescarUsuario(admin.IdUsuario);
 
         Sql("INSERT Clientes(IdUsuario,Nombre,Email) VALUES ("+usuario.IdUsuario+",'Titular','titular@test.local')");
         int reserva=Convert.ToInt32(Sql("INSERT ReservaCabecera(IdCliente,IdUsuarioCreador) SELECT IdCliente,IdUsuario FROM Clientes WHERE IdUsuario="+usuario.IdUsuario+"; SELECT SCOPE_IDENTITY();"));

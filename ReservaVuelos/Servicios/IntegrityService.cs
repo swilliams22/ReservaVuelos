@@ -67,6 +67,23 @@ namespace ReservaVuelos.Servicios
                 usuario.FechaAlta));
         }
 
+        // Una fila alterada no puede aportar el rol de una sesión, ni siquiera
+        // durante contingencia. Comparar también con la referencia independiente.
+        public bool EsUsuarioIntegro(Usuario usuario)
+        {
+            if (usuario == null) return false;
+            int calculado = CalculateUsuarioDVH(usuario);
+            if (usuario.DVH != calculado) return false;
+            using (var cn = ConexionDAL.GetConnection())
+            using (var cmd = new SqlCommand("SELECT ValorDVH FROM IntegridadRegistro WHERE NombreTabla = N'Usuarios' AND IdRegistro = @Id", cn))
+            {
+                cmd.Parameters.AddWithValue("@Id", usuario.IdUsuario.ToString(CultureInfo.InvariantCulture));
+                cn.Open();
+                object esperado = cmd.ExecuteScalar();
+                return esperado != null && esperado != DBNull.Value && Convert.ToInt32(esperado) == calculado;
+            }
+        }
+
         public int CalculateClienteDVH(Cliente cliente)
         {
             return CalculateDVH(JoinFields(

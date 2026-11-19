@@ -214,3 +214,7 @@ Aplicar `ReservaVuelos/SQL/MigracionGrillasIntegridad.sql` sobre una base existe
 ### Cifrado automático TDE
 
 Para dejar `ReservaVuelosDB` cifrada con AES-256, ejecutar `.\base\Activar-Cifrado.ps1` desde la raíz del proyecto (requiere una edición compatible y permisos de administración en SQL Server). Genera y protege las credenciales, respalda el certificado y su clave privada y espera hasta el estado 3 de cifrado completo. Puede repetirse sin recrear datos. La configuración y recuperación están documentadas en `base/README.md`; los secretos locales de `base/local/` están excluidos de Git.
+
+### Integridad antes de autorizar sesiones abiertas
+
+Antes de entrar a una página protegida con sesión, se valida la integridad antes de refrescar el rol y evaluar sus permisos. Una alteración SQL en otro usuario activa contingencia y permite al WebMaster intacto ir a Gestión de Integridad. Una fila propia alterada invalida la sesión y dirige a mantenimiento. Los cambios legítimos de rol, con referencias actualizadas, se aplican normalmente. `tests/Test-AutorizacionIntegridad.ps1` reproduce ambos casos en una base temporal. No requiere migración SQL.

@@ -1,4 +1,4 @@
-using ReservaVuelos.BE;
+﻿using ReservaVuelos.BE;
 using ReservaVuelos.DAL;
 using System;
 using System.Collections.Generic;
@@ -47,44 +47,64 @@ namespace ReservaVuelos.Servicios
 
         public static void ControlarPeticion(HttpContext contexto)
         {
-            Page pagina = contexto.CurrentHandler as Page;
-            if (pagina == null) return; // SOAP aplica su política en cada operación.
+            string destino = PrepararPeticion(contexto);
+            if (destino != null) Redirigir(contexto, destino);
+        }
 
-            // Refrescar rol y estado una vez por petición. Nunca confiar en el rol de una sesión vieja.
-            Usuario anterior = SesionService.GetUser();
-            Usuario usuario = null;
-            if (anterior != null)
-            {
-                usuario = new UsuarioDAL().GetByEmail(anterior.Email);
-                if (usuario == null || !usuario.Activo || usuario.IdUsuario != anterior.IdUsuario)
-                {
-                    SesionService.Clear();
-                    usuario = null;
-                }
-                else SesionService.SetUser(usuario);
-            }
+        private static string PrepararPeticion(HttpContext contexto)
+        {
+            Page pagina = contexto.CurrentHandler as Page;
+            if (pagina == null) return null; // SOAP aplica su política en cada operación.
 
             string permiso;
             if (!PoliticaPaginas.IntentarObtener(pagina.AppRelativeVirtualPath, out permiso))
                 throw new HttpException(403, "Esta página no tiene una política de acceso definida.");
+
+            Usuario anterior = SesionService.GetUser();
+            IntegrityService integridad = new IntegrityService();
+            // Detectar cambios SQL mientras la sesión sigue abierta, antes de
+            // consultar roles/permisos o ejecutar el ciclo de vida de la página.
+            if (anterior != null && permiso != null && !integridad.IsContingencyMode())
+                integridad.ValidateAllAndPersist();
+
+            Usuario usuario = null;
+            if (anterior != null)
+            {
+                usuario = new UsuarioDAL().GetById(anterior.IdUsuario);
+                bool filaAlterada = usuario != null && !integridad.EsUsuarioIntegro(usuario);
+                if (usuario == null || filaAlterada || !usuario.Activo)
+                {
+                    SesionService.Clear();
+                    usuario = null;
+                    if (filaAlterada && permiso != null)
+                    {
+                        return "~/Mantenimiento.aspx";
+                    }
+                }
+                else SesionService.SetUser(usuario);
+            }
+
+            // La contingencia tiene prioridad sobre la autorización normal.
+            if (!integridad.CanAccessDuringContingency(pagina.AppRelativeVirtualPath, usuario))
+            {
+                return SesionService.IsWebMaster(usuario) ? "~/GestionIntegridad.aspx" : "~/Mantenimiento.aspx";
+            }
+
             if (permiso != null)
             {
                 if (usuario == null)
                 {
-                    contexto.Response.Redirect(VirtualPathUtility.ToAbsolute("~/Login.aspx"), true);
-                    return;
+                    return "~/Login.aspx";
                 }
                 if (!TienePermiso(usuario, permiso))
                     throw new HttpException(403, "No tiene permiso para acceder a esta página.");
             }
+            return null;
+        }
 
-            // Antes del ciclo de vida de Page: también frena postbacks y acciones durante contingencia.
-            IntegrityService integridad = new IntegrityService();
-            if (!integridad.CanAccessDuringContingency(pagina.AppRelativeVirtualPath, usuario))
-            {
-                string destino = SesionService.IsWebMaster(usuario) ? "~/GestionIntegridad.aspx" : "~/Mantenimiento.aspx";
-                contexto.Response.Redirect(VirtualPathUtility.ToAbsolute(destino), true);
-            }
+        private static void Redirigir(HttpContext contexto, string destino)
+        {
+            contexto.Response.Redirect(VirtualPathUtility.ToAbsolute(destino), true);
         }
     }
 }
